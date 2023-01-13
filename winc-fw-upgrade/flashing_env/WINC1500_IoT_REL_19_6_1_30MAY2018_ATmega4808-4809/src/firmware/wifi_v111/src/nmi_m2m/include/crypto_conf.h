@@ -17,7 +17,7 @@
 /****************************************
  *	Crypto hardware available			*
  ****************************************/
-#define __HW_BIGINT_ENGINE__
+//#define __HW_BIGINT_ENGINE__
 /*!<
 Enable the HW accelerator for the BIGINT module of the 1003A0 ASIC.
 */

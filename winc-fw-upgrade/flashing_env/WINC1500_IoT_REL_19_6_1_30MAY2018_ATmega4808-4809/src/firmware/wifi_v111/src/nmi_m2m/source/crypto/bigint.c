@@ -22,8 +22,6 @@ INCLUDES
 #include "crypto.h"
 #include "nmi_m2m.h"
 
-#if __ROM_VER__ < ROM_VER_2
-#ifndef __HW_BIGINT_ENGINE__
 
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
@@ -1078,6 +1076,7 @@ uint32 	*pu32BigInt
 		pu32BigInt[u32WordIdx] = GETU32(pu8Bytes,u32ByteIdx);
 	}
 }
+
 /*********************************************************************
 Function
 	BI_ModExp
@@ -1100,7 +1099,7 @@ Version
 Date
 	03 June 2010
 *********************************************************************/
-BI_API sint32 BI_ModExpSW
+sint32 BI_ModExpSW
 (	
 uint8	*pu8X, 	uint32	u32XSize,
 uint8	*pu8E,	uint32	u32ESize,
@@ -1154,8 +1153,6 @@ uint8	*pu8Y,	uint32	u32YSize
 
 	return s32Ret;
 }
-#endif /* __HW_BIGINT_ENGINE__ */
-#endif /* __ROM_VER__ < ROM_VER_2 */
 /*********************************************************************
 Function
 	BI_ModExp
@@ -1225,7 +1222,7 @@ uint8	*pu8Y,	uint32	u32YSize
 		/* Check size requirements for reasonable execution time in Sw. Note that the check on
 		 * u32ESize effectively prevents Sw execution being used for RSA signature generation. */
 		if((u32ESize <= 32) && (u32XSize <= u32NSize))
-			s32Ret = BI_MOD_EXP_SW(pu8X, u32XSize, pu8E, u32ESize, pu8N, u32NSize, pu8Y, u32YSize);
+			s32Ret = BI_ModExpSW(pu8X, u32XSize, pu8E, u32ESize, pu8N, u32NSize, pu8Y, u32YSize);
 	}
 	return s32Ret;
 }

@@ -22,7 +22,7 @@ INCLUDES
 
 #define AES_API	M2M_SHARED_SEC_API
 
-M2M_SHARED_DATA_SEC
+//M2M_SHARED_DATA_SEC
 volatile uint32 gau32AesCbcSharedMemBuffer[AES_BLOCK_SIZE/4];
 
 /*********************************************************************

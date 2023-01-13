@@ -6,7 +6,7 @@
 *  @version		1.0
 */
 
-#include "../efuse/efuse.h"
+//#include "../efuse/efuse.h"
 #include "programmer.h"
 #include "spi_flash/include/spi_flash.h"
 #include "firmware_addresses.h"

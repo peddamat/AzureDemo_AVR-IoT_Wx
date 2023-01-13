@@ -27,7 +27,7 @@ INCLUDES
 
 #define __FAST_GCM__
 
-M2M_SHARED_DATA_SEC
+//M2M_SHARED_DATA_SEC
 volatile uint32 gau32AesGcmSharedMemBuffer[AES_BLOCK_SIZE/4];
 
 #ifndef __FAST_GCM__
