@@ -25,6 +25,7 @@
     <ClCompile Include="..\source\tls_buffer_manager.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\firmware\wifi_v111\src\nmi_m2m\include\crypto_conf.h" />
     <ClInclude Include="..\..\..\firmware\wifi_v111\src\nmi_m2m\source\tls\x509\asn1.h" />
     <ClInclude Include="..\..\..\firmware\wifi_v111\src\nmi_m2m\source\tls\x509\x509_cert.h" />
     <ClInclude Include="..\include\crypto_lib_api.h" />
@@ -42,13 +43,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

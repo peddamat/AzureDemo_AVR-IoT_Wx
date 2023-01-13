@@ -1,0 +1,3 @@
+﻿  bigint.c
+D:\me\Documents\PlatformIO\Projects\AzureDemo_AVR-IoT_Wx\winc-fw-upgrade\flashing_env\WINC1500_IoT_REL_19_6_1_30MAY2018_ATmega4808-4809\src\firmware\wifi_v111\src\nmi_m2m\source\crypto\bigint.c(1228,13): warning C4013: 'BI_ModExpSW' undefined; assuming extern returning int
+  crypto_lib.vcxproj -> D:\me\Documents\PlatformIO\Projects\AzureDemo_AVR-IoT_Wx\winc-fw-upgrade\flashing_env\WINC1500_IoT_REL_19_6_1_30MAY2018_ATmega4808-4809\src\Tools\crypto_lib\lib\crypto.lib

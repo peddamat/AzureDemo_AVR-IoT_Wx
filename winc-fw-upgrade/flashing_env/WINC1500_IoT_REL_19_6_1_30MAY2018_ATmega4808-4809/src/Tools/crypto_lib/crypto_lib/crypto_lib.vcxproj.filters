@@ -71,5 +71,8 @@
     <ClInclude Include="..\source\tls_port.h">
       <Filter>port</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\firmware\wifi_v111\src\nmi_m2m\include\crypto_conf.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
