@@ -1,5 +1,0 @@
-datetime
-cryptography
-pyserial
-asn1crypto
-idna
