@@ -56,3 +56,9 @@ dkms.conf
 
 Interm
 *.tlog
+
+**/Debug/*
+**/Debug_I2C/*
+**/Debug_UART/*
+
+*.log
