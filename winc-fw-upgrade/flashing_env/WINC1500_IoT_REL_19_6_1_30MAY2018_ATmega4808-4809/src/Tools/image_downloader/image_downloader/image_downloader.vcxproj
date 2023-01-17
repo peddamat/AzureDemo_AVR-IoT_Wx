@@ -18,12 +18,12 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2C|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -52,7 +52,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_I2C|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\programmer;..\..\..\;..\..\..\host_drv;..\..\..\common\common_values;..\..\..\host_drv\spi_flash;..\..\..\common\spi_flash_mapping;..\..\..\common\ota;..\..\..\common\efuse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\common;..\..\programmer;..\..\..\;..\..\..\host_drv;..\..\..\common\common_values;..\..\..\host_drv\spi_flash;..\..\..\common\spi_flash_mapping;..\..\..\common\ota;..\..\..\common\efuse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;CONF_WINC_USE_I2C;_CRT_SECURE_NO_WARNINGS;PROFILING;_PLL_LOOKUP_;_NPS_CLIENT_;ERASE_CH_SECTOR;_APP_FIRMWARE_;OTA_GENx;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -71,7 +71,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\programmer;..\..\..\;..\..\..\host_drv;..\..\..\common\common_values;..\..\..\host_drv\spi_flash;..\..\..\common\spi_flash;..\..\..\common\spi_flash_mapping;..\..\..\common\ota;..\..\..\common\efuse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\common;..\..\programmer;..\..\..\;..\..\..\host_drv;..\..\..\common\common_values;..\..\..\host_drv\spi_flash;..\..\..\common\spi_flash;..\..\..\common\spi_flash_mapping;..\..\..\common\ota;..\..\..\common\efuse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;CONF_WINC_USE_UART;_CRT_SECURE_NO_WARNINGS;PROFILING;_PLL_LOOKUP_;_NPS_CLIENT_;ERASE_CH_SECTOR;_APP_FIRMWARE_;OTA_GENx;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>

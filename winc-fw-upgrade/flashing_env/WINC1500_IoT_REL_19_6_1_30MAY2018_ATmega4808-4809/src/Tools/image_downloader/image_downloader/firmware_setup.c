@@ -1,10 +1,10 @@
 
-#include "../efuse/efuse.h"
-#include "../fw_info/fw_info.h"
-#include "common_values.h"
+#include "efuse/efuse.h"
+#include "fw_info/fw_info.h"
+#include "common_values/common_values.h"
 #include "firmware_setup.h"
 #include "programmer.h"
-#include "ota_hdr.h"
+#include "ota/ota_hdr.h"
 
 
 /*Firmware File Revison info*/
