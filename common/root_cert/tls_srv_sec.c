@@ -604,7 +604,7 @@ static tstrTlsSrvSecReadEntry *TlsLoadCertChain(char *pcTlsChainFile) {
 }
 
 /**************************************************************/
-static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPrivKey, uint8 bWriteToFile, uint8 bDumpWholeChain, char *pcKeyWord, char *pcOutPath) {
+static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPrivKey, uint8 bWriteToFile, uint8 bDumpWholeChain, char *pcKeyWord, const char *pcOutPath) {
     sint8 ret = M2M_ERR_FAIL;
     char acFileName[324];
 
@@ -722,7 +722,7 @@ sint8 TlsSrvSecReadDeinit(void) {
 }
 
 /**************************************************************/
-sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKey, uint8 bDumpWholeChain, uint8 bListFiles, uint8 bWriteToFile, char *pcOutPath) {
+sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKey, uint8 bDumpWholeChain, uint8 bListFiles, uint8 bWriteToFile, const char *pcOutPath) {
     sint8 ret = M2M_ERR_FAIL;
     uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 

@@ -53,7 +53,7 @@ INCLUDES
 #include "tls_srv_sec.h"
 
 /**************************************************************/
-int ReadFileToBuffer(char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize) {
+int ReadFileToBuffer(const char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize) {
     FILE *fp;
     int ret = M2M_ERR_FAIL;
 
@@ -128,7 +128,7 @@ _EXIT:
 }
 
 /**************************************************************/
-sint8 TlsCertStoreWriteCertChain(char *pcPrivKeyFile, char *pcSrvCertFile, char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode) {
+sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCertFile, const char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode) {
     sint8 ret = M2M_ERR_FAIL;
     uint32 u32Idx;
     uint8 u8nCerts = 0;

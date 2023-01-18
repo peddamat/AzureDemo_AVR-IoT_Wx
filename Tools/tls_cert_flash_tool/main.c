@@ -55,7 +55,7 @@ INCLUDES
 #include "root_setup.h"
 
 
-extern sint8 TlsCertStoreWriteCertChain(char *pcPrivKeyFile, char *pcSrvCertFile, char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode);
+extern sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCertFile, const char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode);
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 MACROS
@@ -81,139 +81,12 @@ typedef enum{
 	CMD_READ
 }tenuCmd;
 
-typedef struct{
-	char					*pcCADir;
-	char					*pcFwPath;
-	char					*pcPrivKeyFile;
-	char					*pcServerCertFile;
-	char					*pcProgFw;
-	char                    *pcflash_path;
-	uint32					req_serial_number;
-	uint32					req_serial_port;
-	uint8					bIsKeyAvail;
-	tenuTLSCertStoreType	enuCertStore;
-	uint8					bEraseBeforeWrite;
-	uint8					u8PauseAfterFinish;
-}tstrWriteOptions;
-
-
-typedef struct{
-	char					*pcOutPath;
-	char					*pcFwPath;
-	char                    *pcflash_path;
-	uint32					req_serial_number;
-
-	uint8					bIsRsa;
-	uint8					bIsEcdsa;
-	uint8					bIsDumpAll;
-	uint8					bPrintPriv;
-	uint8					bWriteToFile;
-	uint8					bIsListFiles;
-	tenuTLSCertStoreType	enuCertStore;
-}tstrReadOptions;
-
-
-typedef struct{
-	tenuCmd					enuCmd;
-	union{
-		tstrReadOptions		strReadOptions;
-		tstrWriteOptions	strWriteOptions;
-	};
-}tstrCmdLineOptions;
-
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 GLOBALS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 static uint8 gau8RootCertMem[M2M_TLS_ROOTCER_FLASH_SIZE];
 static uint8 gau8TlsSrvSec[M2M_TLS_SERVER_FLASH_SIZE];
-
-/**************************************************************/
-static void printName(void)
-{
-	printf("******************************************\n\r");
-	printf("*   WINC1500 TLS Certificate Flash Tool  *\n\r");
-	printf("******************************************\n\r");
-}
-
-/**************************************************************/
-static void PrintHelp(tenuCmd enuCMD)
-{
-	if(enuCMD == CMD_WRITE)
-	{
-		printf("Write X.509 Certificate chain on WINC Device Flash or a given WINC\n");
-		printf("firmware image file\n\n");
-		printf(" [Usage]: tls_cert_flash_tool.exe write [options]\n");
-		printf(" where options are:\n");
-		printf(" -key file      Private key in PEM format (RSA Keys only). It MUST NOT be\n");
-		printf("                encrypted.\n\n");
-		printf(" -nokey         The private key is not present. This is meaningful if a the\n");
-		printf("                private key is hidden into a secure hardware. This is the\n");
-		printf("                typical case of using ECC508 for ECC secure key storage\n\n");
-		printf(" -cert file     X.509 Certificate file in PEM or DER format. The certificate\n");
-		printf("                SHALL contain the public key associated with the given\n");
-		printf("                private key (If the private key is given).\n\n");
-		printf(" -cadir path    [Optional] Path to a folder containing the intermediate CAs\n");
-		printf("                and the Root CA of the given certificate.\n\n");
-		printf(" -fwimg path    [Optional] Path to the firmware binary image file.\n");
-		printf("                If this option is not given, the keys shall be written\n");
-		printf("                directly on the WINC Device Flash\n\n");
-		printf(" -vflash_path path [Optional] Pass in file with current flash contents, updated after write.\n");
-		printf(" -pf_bin        [ignored]\n");
-		printf(" -erase         Erase the certificate store before writing. If this option is\n");
-		printf("                not given, the new certificate material is appended to the\n");
-		printf("                certificate store\n\n");
-		printf(" -port          [Optional] If not specified the SW tries to find an EDBG chip connected to a serial port, if there is more than one, specify a port\n");
-	    printf(" -aardvark      [ignored]\n");
-		printf("  Examples \n");
-		printf("    tls_cert_flash_tool.exe Write -key rsa.key -cert rsa.cer -erase\n");
-		printf("    tls_cert_flash_tool.exe Write -nokey -cert ecdsa.cer -cadir CADir\n");
-		printf("    tls_cert_flash_tool.exe Write -key rsa.key -cert rsa.cer -cadir CADir\n");
-		printf("    tls_cert_flash_tool.exe Write -key rsa.key -cert rsa.cer -fwimg m2m_aio_3a0.bin\n");
-		printf("\n");
-	}
-	else if(enuCMD == CMD_READ)
-	{
-		printf("Read X.509 Certificate chain from WINC Device Flash or a given WINC\n");
-		printf("firmware image file\n\n");
-		printf(" [Usage]: tls_cert_flash_tool.exe read [options]\n");
-		printf(" where options are:\n");
-		printf(" -rsa           Print WINC Device RSA certificate(if any)\n\n");
-		printf(" -ecdsa         Print WINC Device ECDSA certificate(if any)\n\n");
-		printf(" -dir           List all files in the WINC TLS Certificate Store associated\n");
-		printf("                with the selected authentication (rsa or ecdsa or both)\n\n");
-		printf(" -fwimg path    [Optional] Path to the firmware binary image file.\n");
-		printf("                If this option is not given, the certificates shall be read\n");
-		printf("                directly from the WINC Device Flash\n\n");
-	    printf(" -pf_bin        [ignored]\n");
-		printf(" -out path      A path to a directory where the certificates will be saved. This\n");
-		printf("                option forces the certificates to be written in files. If this option\n");
-		printf("                is not specified, the certificates shall be printed on standard out.\n\n");
-		printf(" -all           Dump all certificates in the WINC certificate chain provisioned on WINC\n");
-		printf("                (if any) in addition to the WINC Device certificate.\n\n");
-		printf(" -privkey       Print the RSA private key (if -rsa option is given) to the standard out.\n");
-		printf("                The RSA private dumping is off by default.\n\n");
-		printf(" -port          [Optional] If not specified the SW tries to find an EDBG chip connected to a serial port, if there is more than one, specify a port\n");
-	    printf(" -aardvark      [ignored]\n");
-		printf("  Examples \n");
-		printf("    tls_cert_flash_tool.exe read -rsa -privkey -dir\n");
-		printf("    tls_cert_flash_tool.exe read -rsa -all\n");
-		printf("    tls_cert_flash_tool.exe read -rsa -out C:/Certs/\n");
-		printf("    tls_cert_flash_tool.exe read -rsa -ecdsa -dir-fwimg m2m_aio_3a0.bin\n");
-		printf("\n");
-	}
-}
-/**************************************************************/
-void printUsage(void)
-{
-	printf("Write/Read X.509 Certificate chain on/from WINC Device Flash or a given WINC\n");
-	printf("firmware image file\n\n");
-	printf(" [Usage]: tls_cert_flash_tool.exe <CMD> [args]\n");
-	printf("  Defined Commands\n");
-	printf("   write\n");
-	printf("   read\n\n");
-	printf("For a specific command help, use <tls_cert_flash_tool.exe <CMD> -help>\n\n");
-}
 
 void dump_flash(char * filename)
 {
@@ -239,265 +112,6 @@ void dump_flash(char * filename)
 #endif
 }
 
-/**************************************************************/
-static int ParseWRITECmdArgs(int argc, char* argv[], tstrWriteOptions *pstrWriteOpt)
-{
-	int		ret		= 0;
-	int		argIdx;
-	char	**ppcOptionParam;
-	int		isParametricOption;
-	uint32	*ppcOptionParamInt;
-
-	pstrWriteOpt->enuCertStore			= TLS_STORE_FLASH;
-	pstrWriteOpt->bIsKeyAvail			= 1;
-	pstrWriteOpt->bEraseBeforeWrite		= 0;
-	pstrWriteOpt->u8PauseAfterFinish	= 1;
-	pstrWriteOpt->req_serial_number = 0;
-
-	for(argIdx = 0; argIdx < argc ; )
-	{
-		isParametricOption = 1;
-		ppcOptionParam = NULL;
-		ppcOptionParamInt = NULL;
-
-		if(STIRCMP(argv[argIdx], "-key"))
-		{
-			ppcOptionParam = &pstrWriteOpt->pcPrivKeyFile;
-		}
-		else if (STIRCMP(argv[argIdx], "-cert"))
-		{
-			ppcOptionParam = &pstrWriteOpt->pcServerCertFile;
-		}
-		else if(STIRCMP(argv[argIdx],"-vflash_path"))
-		{
-			ppcOptionParam = &pstrWriteOpt->pcflash_path;
-		}
-		else if (STIRCMP(argv[argIdx], "-pf_bin"))
-		{
-			ppcOptionParam = &pstrWriteOpt->pcProgFw;
-		}
-		else if(STIRCMP(argv[argIdx], "-cadir"))
-		{
-			ppcOptionParam = &pstrWriteOpt->pcCADir;
-		}
-		else if(STIRCMP(argv[argIdx], "-fwimg"))
-		{
-			ppcOptionParam = &pstrWriteOpt->pcFwPath;
-			pstrWriteOpt->enuCertStore = TLS_STORE_FW_IMG;
-		}
-		else if(STIRCMP(argv[argIdx], "-nokey"))
-		{
-			pstrWriteOpt->bIsKeyAvail	= 0;
-			isParametricOption			= 0;
-			ppcOptionParam				= NULL;
-		}
-		else if(STIRCMP(argv[argIdx], "-erase"))
-		{
-			pstrWriteOpt->bEraseBeforeWrite	= 1;
-			isParametricOption				= 0;
-			ppcOptionParam					= NULL;
-		}
-		else if(STIRCMP(argv[argIdx], "-nowait"))
-		{
-			pstrWriteOpt->u8PauseAfterFinish	= 0;
-			isParametricOption					= 0;
-			ppcOptionParam						= NULL;
-		}
-		else if (STIRCMP(argv[argIdx], "-aardvark"))
-		{
-			ppcOptionParamInt = &pstrWriteOpt->req_serial_number;
-		}
-		else if (STIRCMP(argv[argIdx], "-port"))
-		{
-			ppcOptionParamInt = &pstrWriteOpt->req_serial_number;
-		}
-		else
-		{
-			printf("(ERR)Invalid Cmd Line Arg <%s>\n", argv[argIdx]);
-			ret = 1;
-			break;
-		}
-
-		argIdx ++;
-		if(isParametricOption)
-		{
-			if(argIdx >= argc)
-			{
-				printf("(ERR) Missing Parameter For Option <%s>\n", argv[argIdx - 1]);
-				ret = 1;
-				break;
-			}
-			if (ppcOptionParamInt)
-			{
-				*ppcOptionParamInt = atol(argv[argIdx++]);
-			}
-			else
-			{
-				*ppcOptionParam = argv[argIdx++];
-			}
-		}
-	}
-	return ret;
-}
-
-/**************************************************************/
-static int ParseREADCmdArgs(int argc, char* argv[], tstrReadOptions *pstrReadOpt)
-{
-	int		ret		= 0;
-	int		argIdx;
-	char	**ppcOptionParam;
-	int		isParametricOption;
-	uint32	*ppcOptionParamInt;
-
-	pstrReadOpt->enuCertStore	= TLS_STORE_FLASH;
-
-	for(argIdx = 0; argIdx < argc ; )
-	{
-		isParametricOption = 0;
-		ppcOptionParam = NULL;
-		ppcOptionParamInt = NULL;
-
-		if(STIRCMP(argv[argIdx], "-rsa"))
-		{
-			pstrReadOpt->bIsRsa		= 1;
-		}
-		else if(STIRCMP(argv[argIdx], "-ecdsa"))
-		{
-			pstrReadOpt->bIsEcdsa	= 1;
-		}
-		else if(STIRCMP(argv[argIdx], "-dir"))
-		{
-			pstrReadOpt->bIsListFiles	= 1;
-		}
-		else if(STIRCMP(argv[argIdx], "-fwimg"))
-		{
-			isParametricOption = 1;
-			ppcOptionParam = &pstrReadOpt->pcFwPath;
-			pstrReadOpt->enuCertStore = TLS_STORE_FW_IMG;
-		}
-		else if (STIRCMP(argv[argIdx], "-pf_bin"))
-		{
-			//ppcOptionParam = &pstrReadOpt->pcProgFw;
-			isParametricOption					= 0;
-		}
-		else if(STIRCMP(argv[argIdx], "-out"))
-		{
-			pstrReadOpt->bWriteToFile	= 1;
-			isParametricOption			= 1;
-			ppcOptionParam				= &pstrReadOpt->pcOutPath;
-		}
-		else if(STIRCMP(argv[argIdx],"-vflash_path"))
-		{
-			isParametricOption			= 1;
-			ppcOptionParam              = &pstrReadOpt->pcflash_path;
-		}
-		else if(STIRCMP(argv[argIdx], "-all"))
-		{
-			pstrReadOpt->bIsDumpAll	= 1;
-		}
-		else if(STIRCMP(argv[argIdx], "-privkey"))
-		{
-			pstrReadOpt->bPrintPriv	= 1;
-		}
-		else if (STIRCMP(argv[argIdx], "-aardvark"))
-		{
-			//ppcOptionParamInt = &pstrReadOpt->req_serial_number;
-			isParametricOption					= 0;
-		}
-		else if (STIRCMP(argv[argIdx], "-port"))
-		{
-			ppcOptionParamInt = &pstrReadOpt->req_serial_number;
-		}
-		else
-		{
-			printf("(ERR)Invalid Cmd Line Arg <%s>\n", argv[argIdx]);
-			ret = 1;
-			break;
-		}
-
-		argIdx ++;
-		if(isParametricOption)
-		{
-			if(argIdx >= argc)
-			{
-				printf("(ERR) Missing Parameter For Option <%s>\n", argv[argIdx - 1]);
-				ret = 1;
-				break;
-			}
-			if (ppcOptionParamInt)
-			{
-				*ppcOptionParamInt = atoi(argv[argIdx++]);
-			}
-			else
-			{
-                *ppcOptionParam = argv[argIdx ++];
-			}
-		}
-	}
-	return ret;
-}
-
-/**************************************************************/
-int parseCmdLineArgs(int argc, char* argv[], tstrCmdLineOptions *pstrOptList)
-{
-	int	ret = 1;
-
-	if(pstrOptList == NULL)
-		return 1;
-
-	if(argc < 2)
-	{
-		printUsage();
-	}
-	else
-	{
-		/* Defaults.
-		*/
-		memset(pstrOptList, 0, sizeof(tstrCmdLineOptions));
-		ret = 0;
-
-		/*
-			First argument is always a command. Current defined commands are:
-			1. Write.
-			2. Read.
-		*/
-		if(STIRCMP(argv[1], "write"))
-		{
-			pstrOptList->enuCmd = CMD_WRITE;
-			if(argv[2]==NULL || STIRCMP(argv[2], "-help"))
-			{
-				PrintHelp(pstrOptList->enuCmd);
-				ret = 1;
-			}
-			else
-			{
-				ret = ParseWRITECmdArgs(argc - 2, &argv[2], &pstrOptList->strWriteOptions);
-			}
-		}
-		else if(STIRCMP(argv[1], "read"))
-		{
-			pstrOptList->enuCmd			= CMD_READ;
-			if(argv[2] == NULL || STIRCMP(argv[2], "-help"))
-			{
-				PrintHelp(pstrOptList->enuCmd);
-				ret = 1;
-			}
-			else
-			{
-				ret = ParseREADCmdArgs(argc - 2, &argv[2], &pstrOptList->strReadOptions);
-			}
-		}
-		else
-		{
-			printf("Unknown Command %s\n", argv[1]);
-			ret = 1;
-		}
-
-	}
-	return ret;
-}
-
-/**************************************************************/
 static sint8 TlsCertStoreSaveToFlash(uint8 *pu8TlsSrvFlashSecContent, uint8 u8PortNum, uint8* vflash)
 {
 	sint8	s8Ret = M2M_ERR_FAIL;
@@ -518,7 +132,6 @@ static sint8 TlsCertStoreSaveToFlash(uint8 *pu8TlsSrvFlashSecContent, uint8 u8Po
 	return s8Ret;
 }
 
-/**************************************************************/
 static sint8 TlsCertStoreLoadFromFlash(uint8 u8PortNum)
 {
 	sint8	s8Ret = M2M_ERR_FAIL;
@@ -531,8 +144,7 @@ static sint8 TlsCertStoreLoadFromFlash(uint8 u8PortNum)
 	return s8Ret;
 }
 
-/**************************************************************/
-static sint8 TlsCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *pcFwFile)
+static sint8 TlsCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, const char *pcFwFile)
 {
 	FILE	*fp;
 	sint8	s8Ret	= M2M_ERR_FAIL;
@@ -552,8 +164,7 @@ static sint8 TlsCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *pc
 	return s8Ret;
 }
 
-/**************************************************************/
-static sint8 TlsCertStoreLoadFromFwImage(char *pcFwFile)
+static sint8 TlsCertStoreLoadFromFwImage(const char *pcFwFile)
 {
 	FILE	*fp;
 	sint8	s8Ret	= M2M_ERR_FAIL;
@@ -573,8 +184,7 @@ static sint8 TlsCertStoreLoadFromFwImage(char *pcFwFile)
 	return s8Ret;
 }
 
-/**************************************************************/
-static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, char *pcFwFile, uint8 port, uint8* vflash)
+static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8* vflash)
 {
 	sint8	ret = M2M_ERR_FAIL;
 
@@ -603,8 +213,7 @@ static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, char *pcFwFile, uin
 	return ret;
 }
 
-/**************************************************************/
-sint8 TlsCertStoreLoad(tenuTLSCertStoreType enuStore, char *pcFwFile, uint8 port, uint8* vflash)
+sint8 TlsCertStoreLoad(tenuTLSCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8* vflash)
 {
 	sint8	ret = M2M_ERR_FAIL;
 
@@ -624,205 +233,224 @@ sint8 TlsCertStoreLoad(tenuTLSCertStoreType enuStore, char *pcFwFile, uint8 port
 	return ret;
 }
 
-
-
-struct arg_lit *verb, *help, *version;
-struct arg_lit *nokey, *erase;
-struct arg_lit *rsa, *ecdsa, *dir, *all, *privkey;
-struct arg_str *mode, *type, *port;
-struct arg_int *level;
-struct arg_file *fwimg, *out;
-struct arg_end *end;
-
-/**************************************************************/
-int main(int argc, char* argv[])
+int ReadCertFromDisk(char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize)
 {
-    void *argtable[] = {
-        help    = arg_litn(NULL, "help", 0, 1, "display this help and exit"),
-        version = arg_litn(NULL, "version", 0, 1, "display version info and exit"),
-        mode 	= arg_str1(NULL, NULL, "<mode>", "read or write"),
-        verb    = arg_litn("v", "verbose", 0, 1, "verbose output"),
-        rsa     = arg_lit0(NULL, "rsa", "rsa cert"),
-        ecdsa     = arg_lit0(NULL, "ecdsa", "ecdsa cert"),
-        dir     = arg_lit0(NULL, "dir", "dir"),
-        fwimg   = arg_file1(NULL, "fwimg", "<fwimg>", "firmware image"),
-        out    = arg_file0(NULL, "out", "<output>", "output files"),
-        all     = arg_lit0(NULL, "all", "all"),
-        privkey     = arg_lit0(NULL, "privkey", "privkey"),
-        type     = arg_str1("t", "type", "<type>", "tls or rootcert"),
-        end     = arg_end(20),
-    };
+	FILE	*fp;
+	int		ret = M2M_ERR_FAIL;
 
-    int exitcode = 0;
-    char progname[] = "tls_cert_flash_tool.exe";
-
-    int nerrors;
-    nerrors = arg_parse(argc,argv,argtable);
-
-    /* special case: '--help' takes precedence over error reporting */
-    if (help->count > 0 || mode->count == 0)
-    {
-        printf("Usage: %s", progname);
-        arg_print_syntax(stdout, argtable, "\n");
-        printf("Demonstrate command-line parsing in argtable3.\n\n");
-        arg_print_glossary(stdout, argtable, "  %-25s %s\n");
-        exitcode = 0;
-        goto exit;
-    }
-
-    /* If the parser returned any errors then display them and exit */
-    if (nerrors > 0)
-    {
-        /* Display the error details contained in the arg_end struct.*/
-        arg_print_errors(stdout, end, progname);
-        printf("Try '%s --help' for more information.\n", progname);
-        exitcode = 1;
-        goto exit;
-    }
-
-
-	int					ret		= 1;
-	uint8				bPause	= 0;
-	tenuWriteMode		enuMode;
-	tstrCmdLineOptions	strCmdLineOpt;
-	uint32				u32TlsSrvSecSz;
-
-	printName();
-	if(strcmp(mode->sval[0], "write") == 0)
+	fp = fopen(pcFileName, "rb");
+	if(fp)
 	{
-        tstrWriteOptions *pstrWRITE = &strCmdLineOpt.strWriteOptions;
-        uint8 *vflash = NULL;
-        long szvflash = 0;
+		uint32	u32FileSize;
+		uint8	*pu8Buf;
 
-        if (pstrWRITE->pcServerCertFile == NULL) {
-                printf("Server Certificate File MUST Be Supplied\n");
-                bPause = 1;
-                goto __EXIT;
-		}
-		if((pstrWRITE->pcPrivKeyFile == NULL) && (pstrWRITE->bIsKeyAvail))
+		fseek(fp, 0, SEEK_END);
+		u32FileSize = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+
+		pu8Buf = (uint8*)malloc(u32FileSize);
+		if(pu8Buf != NULL)
 		{
-			printf("Server Private Key File MUST Be Supplied\n");
-			bPause = 1;
-			goto __EXIT;
+			fread(pu8Buf, 1, u32FileSize, fp);
+			*pu32FileSize = u32FileSize;
+			*ppu8FileData = pu8Buf;
+			ret = M2M_SUCCESS;
 		}
-
-		if(pstrWRITE->pcflash_path)
-		{
-			FILE * fp;
-
-			fp = fopen(pstrWRITE->pcflash_path,"rb");
-			if (fp)
-			{
-				fseek (fp, 0, SEEK_END);   // non-portable
-				szvflash=ftell (fp);
-				rewind(fp);
-
-				vflash = malloc(szvflash);
-				if(vflash)
-				{
-					memset(vflash,0xFF,szvflash);
-					M2M_PRINT("Reading vflash from %s\n", pstrWRITE->pcflash_path);
-					fread(vflash,1,szvflash,fp);
-				}
-				fclose (fp);
-			}
-		}
-
-		if(pstrWRITE->bEraseBeforeWrite)
-		{
-			/*
-				Clean write after erasing the current TLS Certificate section contents.
-			*/
-			enuMode = TLS_SRV_SEC_MODE_WRITE;
-		}
-		else
-		{
-			/*
-				Write to the end of the current TLS Certificate section.
-			*/
-			enuMode = TLS_SRV_SEC_MODE_APPEND;
-			if(TlsCertStoreLoad(pstrWRITE->enuCertStore, pstrWRITE->pcFwPath, pstrWRITE->req_serial_number, vflash) != M2M_SUCCESS)
-			{
-				bPause = 1;
-				goto __EXIT;
-			}
-		}
-
-		/*
-			Modify the TLS Certificate Store Contents.
-		*/
-		ret = TlsCertStoreWriteCertChain(pstrWRITE->pcPrivKeyFile, pstrWRITE->pcServerCertFile, pstrWRITE->pcCADir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
-		if(ret == M2M_SUCCESS)
-		{
-			/*
-				Write the TLS Certificate Section buffer to the chosen destination,
-				either to the firmware image or the WINC stacked flash directly.
-			*/
-			ret = TlsCertStoreSave(pstrWRITE->enuCertStore, pstrWRITE->pcFwPath, pstrWRITE->req_serial_number, vflash);
-		}
-		bPause = pstrWRITE->u8PauseAfterFinish;
-
-		if(vflash)
-		{
-			FILE *fp;
-			fp = fopen(pstrWRITE->pcflash_path,"wb");
-			if(fp != NULL)
-			{
-				M2M_PRINT("Saving vflash to %s\n", pstrWRITE->pcflash_path);
-				fwrite(vflash,1,szvflash,fp);
-				fclose(fp);
-			}
-		}
+		fclose(fp);
 	}
-	else if(strcmp(mode->sval[0], "read") == 0)
+	return ret;
+}
+
+int HandleReadCmd(const char *fwImg, const char *outfile)
+{
+	int ret = M2M_ERR_FAIL;
+
+	// Dump TLS Store contents
+	ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL);
+	if (ret != M2M_SUCCESS)
 	{
-		if (strcmp(type->sval[0], "tls") == 0)
-		{
-			if (fwimg->count == 1)
-			{
-				ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwimg->filename[0], 0, NULL);
-				if (ret != M2M_SUCCESS)
-				{
-					bPause = 1;
-					goto __EXIT;
-				}
-			}
+		return ret;
+	}
 
-			// Load the TLS Certificate Store into memory
-			TlsSrvSecReadInit(gau8TlsSrvSec);
-			TlsSrvSecDumpContents(rsa->count, ecdsa->count, privkey->count, all->count, dir->count, out->count, out->filename[0]);
-			bPause = 1;
-		}
-		else if (strcmp(type->sval[0], "root") == 0)
-		{
-			if (fwimg->count == 1)
-			{
-				ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwimg->filename[0], 0, NULL);
-				if (ret != M2M_SUCCESS)
-				{
-					bPause = 1;
-					goto __EXIT;
-				}
+	TlsSrvSecReadInit(gau8TlsSrvSec);
+	TlsSrvSecDumpContents(1,1,1,1,1, 1, outfile);
 
-				DumpRootCerts();
-			}
-		}
+	// Dump Root Cert Store Contents
+	ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+	if (ret != M2M_SUCCESS)
+	{
+		return ret;
+	}
+
+	DumpRootCerts();
+
+    return 0;
+}
+
+int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase)
+{
+    int ret = M2M_ERR_FAIL;
+	uint32	u32TlsSrvSecSz;
+
+    tenuWriteMode enuMode;
+
+    if (cert == NULL) {
+		printf("Server Certificate File MUST Be Supplied\n");
+		return ret;
+	}
+
+	if(erase == 1)
+	{
+		/* Clean write after erasing the current TLS Certificate section contents.  */
+		enuMode = TLS_SRV_SEC_MODE_WRITE;
 	}
 	else
 	{
-		bPause = 1;
+		/* Write to the end of the current TLS Certificate section.  */
+		enuMode = TLS_SRV_SEC_MODE_APPEND;
+		if(TlsCertStoreLoad(enuMode, outfile, 0, NULL) != M2M_SUCCESS)
+		{
+			return ret;
+		}
 	}
 
-exit:
-    /* deallocate each non-null entry in argtable[] */
-    arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
-    return exitcode;
+	/* Modify the TLS Certificate Store Contents.  */
+	ret = TlsCertStoreWriteCertChain(key, cert, ca_dir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
+	if(ret == M2M_SUCCESS)
+	{
+		/* Write the TLS Certificate Section buffer to the chosen destination,
+			either to the firmware image or the WINC stacked flash directly.  */
+		ret = TlsCertStoreSave(enuMode, fwImg, 0, NULL);
+	}
+
+
+	ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+	if (ret != M2M_SUCCESS)
+	{
+		return ret;
+	}
+
+#if 0
+	for(int i = 0; i < 1; i++)
+	{
+		uint32	u32RootCertSz;
+		uint8	*pu8RootCertBuff;
+
+		if(ReadCertFromDisk(in->filename[i], &pu8RootCertBuff, &u32RootCertSz) == M2M_SUCCESS)
+		{
+			if(WriteRootCertificate(pu8RootCertBuff, u32RootCertSz, NULL) != 0)
+			{
+				printf("Error writing certificate.\n");
+				ret = -1;
+				break;
+			}
+		}
+	}
+#endif
+}
+
+#define REG_EXTENDED 1
+#define REG_ICASE (REG_EXTENDED << 1)
+
+int main(int argc, char **argv)
+{
+    struct arg_rex  *read_cmd     = arg_rex1(NULL,  NULL,  "read", NULL, REG_ICASE, NULL);
+    struct arg_file *infiles1 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_file *outfile1 = arg_file0("o",  NULL,  "<output directory>", "Directory to dump certs");
+    struct arg_lit *help1 = arg_lit0("h",  "help",  "Show help");
+    struct arg_end  *end1     = arg_end(20);
+    void* argtable1[] = {read_cmd,infiles1,outfile1,help1,end1};
+    int nerrors1;
+
+    struct arg_rex  *update_cmd     = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
+    struct arg_file *infiles2 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_file *outfile2 = arg_file0("o",  NULL,  "<output>", "output file (default is \"-\")");
+    struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
+    struct arg_file *cert = arg_file1(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
+    struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
+    struct arg_file *ca_dir = arg_file1(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate.CA cert directory");
+    struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
+    struct arg_lit *help2 = arg_lit0("h",  "help",  "Show help");
+    struct arg_end  *end2     = arg_end(20);
+    void* argtable2[] = {update_cmd,infiles2, outfile2, key, cert, pf_bin, ca_dir, erase, help2, end2};
+    int nerrors2;
+
+    const char* progname = "atwin1500_fwtool.exe";
+    int exitcode=0;
+
+    /* verify all argtable[] entries were allocated sucessfully */
+    if (arg_nullcheck(argtable1)!=0 ||
+        arg_nullcheck(argtable2)!=0 )
+	{
+        /* NULL entries were detected, some allocations must have failed */
+        printf("%s: insufficient memory\n",progname);
+        exitcode=1;
+        goto __EXIT;
+	}
+
+    nerrors1 = arg_parse(argc,argv,argtable1);
+    nerrors2 = arg_parse(argc,argv,argtable2);
+
+    if (nerrors1==0)
+	{
+        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0]);
+	}
+    else if (nerrors2==0)
+	{
+        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count);
+	}
+	else
+	{
+		// We get here if the command line matched none of the possible syntaxes
+		if (read_cmd->count > 0)
+		{
+			printf("Usage: %s ", progname);  arg_print_syntax(stdout,argtable1,"\n");
+
+			if(help1->count)
+			{
+				printf("\nRead X.509 Certificate chain from WINC Device Flash or a given WINC firmware image file\n\n");
+				printf("Options:\n");
+				arg_print_glossary(stdout, argtable1, "  %-25s %s\n");
+
+				printf("\nExamples: \n");
+				printf("  %s read -rsa -privkey -dir\n", progname);
+				printf("  %s read -rsa -all\n", progname);
+				printf("  %s read -rsa -out C:/Certs/\n", progname);
+				printf("  %s read -rsa -ecdsa -dir-fwimg m2m_aio_3a0.bin\n", progname);
+				goto __EXIT;
+			}
+			arg_print_errors(stdout,end1,"- error");
+		}
+		else if (update_cmd->count > 0)
+		{
+			printf("Usage: %s ", progname);  arg_print_syntax(stdout,argtable2,"\n");
+
+			if(help2->count)
+			{
+				printf("\nWrite X.509 Certificate chain on WINC Device Flash or a given WINC firmware image file\n\n");
+				printf("Options:\n");
+				arg_print_glossary(stdout, argtable2, "  %-25s %s\n");
+
+				printf("\nExamples: \n");
+				printf("  %s update -key rsa.key -cert rsa.cer -erase\n", progname);
+				printf("  %s update -nokey -cert ecdsa.cer -cadir CADir\n", progname);
+				printf("  %s update -key rsa.key -cert rsa.cer -cadir CADir\n", progname);
+				printf("  %s update -key rsa.key -cert rsa.cer -fwimg m2m_aio_3a0.bin\n", progname);
+				goto __EXIT;
+			}
+			arg_print_errors(stdout,end2,"- error");
+		}
+		else
+		{
+			printf("Usage: %s ", progname);  arg_print_syntax(stdout,argtable1,"\n");
+			printf("       %s ", progname);  arg_print_syntax(stdout,argtable2,"\n\n");
+			printf("For a specific command help, use <%s <CMD> --help>\n\n", progname);
+		}
+	}
 
 __EXIT:
+	arg_freetable(argtable1,sizeof(argtable1)/sizeof(argtable1[0]));
+	arg_freetable(argtable2,sizeof(argtable2)/sizeof(argtable2[0]));
 
-	if(bPause)
-	{
-		system("pause");
-	}
-	return ret;
+	return exitcode;
 }
