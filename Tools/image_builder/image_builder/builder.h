@@ -6,6 +6,7 @@
 */
 #include "programmer.h"
 #include "../efuse/efuse.h"
+#include "..\..\..\common\root_cert\root_setup.h"
 #include "programmer.h"
 #include "ota_hdr.h"
 /**

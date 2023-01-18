@@ -20,4 +20,6 @@
 */
 int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash);
 
+int ReadRootCertificate(char* pcFwFile);
+int DumpRootCerts(void);
 #endif  //__ROOT_CERT_SETUP_H__

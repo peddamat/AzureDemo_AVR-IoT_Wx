@@ -318,3 +318,84 @@ int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash
 END:
     return ret;
 }
+
+int ReadRootCertificate(char *pcFwFile)
+{
+	FILE	*fp;
+
+	fp = fopen(pcFwFile, "rb");
+    if (fp)
+    {
+        fseek(fp, M2M_TLS_ROOTCER_FLASH_OFFSET, SEEK_SET);
+        fread(gau8RootCertMem, 1, M2M_TLS_ROOTCER_FLASH_SIZE, fp);
+        fclose(fp);
+        return 1;
+    }
+	else
+	{
+		printf("(ERR)Cannot Open Fw image <%s>\n", pcFwFile);
+	}
+	return 0;
+}
+
+int DumpRootCerts(void)
+{
+    uint32                  u32Idx;
+    uint8                   bIncrement        = 0;
+    uint32                  u32nStoredCerts   = 0;
+    uint8                   au8StartPattern[] = ROOT_CERT_FLASH_START_PATTERN;
+    uint8                   au8EmptyPattern[] = ROOT_CERT_FLASH_EMPTY_PATTERN;
+    tstrRootCertFlashHeader *pstrRootFlashHdr;
+    tstrRootCertEntryHeader *pstrEntryHdr;
+    uint16                  u16Offset;
+    uint16                  u16WriteSize;
+    tstrRootCertPubKeyInfo  *pstrKey;
+
+    pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);
+    u16Offset        = sizeof(tstrRootCertFlashHeader);
+
+    // Make sure the Root Cert Store isn't empty
+    if(m2m_memcmp(au8EmptyPattern, pstrRootFlashHdr->au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH) != 0)
+    {
+        u32nStoredCerts = pstrRootFlashHdr->u32nCerts;
+        bIncrement = 1;
+
+		printf("Root Cert Store contains %i entries!\r\n", u32nStoredCerts);
+
+        for(u32Idx = 0 ; u32Idx < u32nStoredCerts ; u32Idx ++)
+        {
+            pstrEntryHdr = (tstrRootCertEntryHeader*)((void *)&gau8RootCertMem[u16Offset]);
+            pstrKey      = &pstrEntryHdr->strPubKey;
+
+            if (pstrEntryHdr->strPubKey.u32PubKeyType == 1)
+            {
+                printf("\r\nCertificate %i (RSA): ", u32Idx + 1);
+            }
+            else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
+            {
+                printf("\r\nCertificate %i (ECDSA): ", u32Idx + 1);
+            }
+            else
+            {
+                printf("\r\nCertificate %i (UNKNOWN TYPE!): ", u32Idx + 1);
+            }
+
+            for (int i = 0; i < CRYPTO_SHA1_DIGEST_SIZE; i++)
+            {
+                printf("%i ", pstrEntryHdr->au8SHA1NameHash[i]);
+            }
+            printf("\r\nStart Date: %i-%i-%i\r\n", pstrEntryHdr->strStartDate.u8Day, pstrEntryHdr->strStartDate.u8Month, pstrEntryHdr->strStartDate.u16Year);
+            printf("End Date: %i-%i-%i\r\n", pstrEntryHdr->strExpDate.u8Day, pstrEntryHdr->strExpDate.u8Month, pstrEntryHdr->strExpDate.u16Year);
+
+            u16Offset += sizeof(tstrRootCertEntryHeader);
+            u16Offset += (pstrKey->u32PubKeyType == ROOT_CERT_PUBKEY_RSA) ?
+                (WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz) + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16ESz)) : (WORD_ALIGN(pstrKey->strEcsdaKeyInfo.u16KeySz) * 2);
+        }
+    }
+    else
+    {
+        return 0;
+    }
+
+    return 1;
+}
