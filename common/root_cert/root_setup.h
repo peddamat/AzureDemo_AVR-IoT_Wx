@@ -3,7 +3,11 @@
 
 #include "programmer.h"
 
-/*********************************************/
+typedef enum{
+	ROOT_STORE_INVALID,
+	ROOT_STORE_FLASH,
+	ROOT_STORE_FW_IMG
+}tenuRootCertStoreType;
 
 /**
 *    @fn         int WriteRootCertificate(char *pcRootCertFileName)
@@ -20,6 +24,8 @@
 */
 int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash);
 
-int ReadRootCertificate(char* pcFwFile);
+sint8 RootCertStoreLoad(tenuRootCertStoreType enuStore, char* pcFwFile, uint8 port, uint8* vflash);
+static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum);
+static sint8 RootCertStoreLoadFromFwImage(char* pcFwFile);
 int DumpRootCerts(void);
 #endif  //__ROOT_CERT_SETUP_H__

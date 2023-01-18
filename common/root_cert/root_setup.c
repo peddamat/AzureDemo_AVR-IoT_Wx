@@ -14,6 +14,7 @@
 INCLUDES
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
+#include <stdio.h>
 #include "crypto_lib_api.h"
 #include "root_setup.h"
 #include "programmer.h"
@@ -54,7 +55,6 @@ INCLUDES
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 DATA TYPES
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
-
 
 typedef struct{
     uint8  au8StartPattern[ROOT_CERT_FLASH_START_PATTERN_LENGTH];
@@ -319,24 +319,60 @@ END:
     return ret;
 }
 
-int ReadRootCertificate(char *pcFwFile)
+sint8 RootCertStoreLoad(tenuRootCertStoreType enuStore, char *pcFwFile, uint8 port, uint8* vflash)
+{
+	sint8	ret = M2M_ERR_FAIL;
+
+	switch(enuStore)
+	{
+	case ROOT_STORE_FLASH:
+		ret = RootCertStoreLoadFromFlash(port);
+		break;
+
+	case ROOT_STORE_FW_IMG:
+		ret = RootCertStoreLoadFromFwImage(pcFwFile);
+		break;
+
+	default:
+		break;
+	}
+	return ret;
+}
+
+static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum)
+{
+	sint8	s8Ret = M2M_ERR_FAIL;
+
+	if(programmer_init(&u8PortNum, 0) == M2M_SUCCESS)
+	{
+		s8Ret = programmer_read(gau8RootCertMem, M2M_TLS_ROOTCER_FLASH_OFFSET, M2M_TLS_ROOTCER_FLASH_SIZE);
+		programmer_deinit();
+	}
+	return s8Ret;
+}
+
+/**************************************************************/
+static sint8 RootCertStoreLoadFromFwImage(char *pcFwFile)
 {
 	FILE	*fp;
+	sint8	s8Ret	= M2M_ERR_FAIL;
 
 	fp = fopen(pcFwFile, "rb");
-    if (fp)
-    {
-        fseek(fp, M2M_TLS_ROOTCER_FLASH_OFFSET, SEEK_SET);
-        fread(gau8RootCertMem, 1, M2M_TLS_ROOTCER_FLASH_SIZE, fp);
-        fclose(fp);
-        return 1;
-    }
+	if(fp)
+	{
+		fseek(fp, M2M_TLS_ROOTCER_FLASH_OFFSET, SEEK_SET);
+		fread(gau8RootCertMem, 1, M2M_TLS_ROOTCER_FLASH_SIZE, fp);
+		fclose(fp);
+		s8Ret = M2M_SUCCESS;
+	}
 	else
 	{
 		printf("(ERR)Cannot Open Fw image <%s>\n", pcFwFile);
 	}
-	return 0;
+	return s8Ret;
 }
+
+
 
 int DumpRootCerts(void)
 {

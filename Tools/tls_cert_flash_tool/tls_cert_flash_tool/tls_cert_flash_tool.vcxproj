@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\common\argtable\argtable3.c" />
     <ClCompile Include="..\..\..\common\root_cert\pem.c" />
+    <ClCompile Include="..\..\..\common\root_cert\root_setup.c" />
     <ClCompile Include="..\..\..\common\root_cert\tls_cert_store_win.c" />
     <ClCompile Include="..\..\..\common\root_cert\tls_srv_sec.c" />
     <ClCompile Include="..\..\..\host_drv\driver\source\nmasic.c" />
@@ -148,7 +149,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\root_cert\pem.h" />
+    <ClInclude Include="..\..\..\common\root_cert\root_setup.h" />
     <ClInclude Include="..\..\..\common\root_cert\tls_srv_sec.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\root_certificate_downloader\root_certificate_downloader.vcxproj">
+      <Project>{188bbe69-6710-467c-9ca5-ef866925ed0b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

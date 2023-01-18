@@ -22,6 +22,9 @@
     <Filter Include="pem">
       <UniqueIdentifier>{f799df8a-6274-4e08-a92f-4538388496fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="root_setup">
+      <UniqueIdentifier>{45434c30-770a-4859-836e-de37d2669821}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\host_drv\driver\source\nmasic.c">
@@ -72,11 +75,17 @@
     <ClCompile Include="..\..\..\common\argtable\argtable3.c">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\root_cert\root_setup.c">
+      <Filter>root_setup</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\root_cert\pem.h">
       <Filter>pem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\root_cert\tls_srv_sec.h" />
+    <ClInclude Include="..\..\..\common\root_cert\root_setup.h">
+      <Filter>root_setup</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
