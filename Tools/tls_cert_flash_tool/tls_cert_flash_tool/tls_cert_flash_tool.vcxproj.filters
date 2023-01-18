@@ -69,6 +69,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\common\root_cert\tls_srv_sec.c" />
     <ClCompile Include="..\..\..\common\root_cert\tls_cert_store_win.c" />
+    <ClCompile Include="..\..\..\common\argtable\argtable3.c">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\root_cert\pem.h">

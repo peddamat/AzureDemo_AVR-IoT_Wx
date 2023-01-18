@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\common\argtable\argtable3.c" />
     <ClCompile Include="..\..\..\common\root_cert\pem.c" />
     <ClCompile Include="..\..\..\common\root_cert\tls_cert_store_win.c" />
     <ClCompile Include="..\..\..\common\root_cert\tls_srv_sec.c" />

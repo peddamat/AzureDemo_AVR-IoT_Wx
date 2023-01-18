@@ -5,8 +5,9 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
-    <LocalDebuggerCommandArguments> read -dir -rsa -ecdsa -all -fwimg c:\\atwinc1500-original.bin</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>read --fwimg=atwinc1500-original.bin --dir --rsa --ecdsa --privkey --all</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerWorkingDirectory>..\Debug_UART</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommandArguments> read -dir -rsa -ecdsa -all -fwimg c:\\atwinc1500-original.bin</LocalDebuggerCommandArguments>

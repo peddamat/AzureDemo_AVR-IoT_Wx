@@ -50,6 +50,7 @@ INCLUDES
 #include "crypto_lib_api.h"
 #include "programmer.h"
 #include "tls_srv_sec.h"
+#include "../common/argtable/argtable3.h"
 
 
 extern sint8 TlsCertStoreWriteCertChain(char *pcPrivKeyFile, char *pcSrvCertFile, char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode);
@@ -121,6 +122,7 @@ typedef struct{
 GLOBALS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
+static uint8 gau8RootCertMem[M2M_TLS_ROOTCER_FLASH_SIZE];
 static uint8 gau8TlsSrvSec[M2M_TLS_SERVER_FLASH_SIZE];
 
 /**************************************************************/
@@ -569,6 +571,27 @@ static sint8 TlsCertStoreLoadFromFwImage(char *pcFwFile)
 }
 
 /**************************************************************/
+static sint8 RootCertStoreLoadFromFwImage(char *pcFwFile)
+{
+	FILE	*fp;
+	sint8	s8Ret	= M2M_ERR_FAIL;
+
+	fp = fopen(pcFwFile, "rb");
+	if(fp)
+	{
+		fseek(fp, M2M_TLS_ROOTCER_FLASH_OFFSET, SEEK_SET);
+		fread(gau8RootCertMem, 1, M2M_TLS_ROOTCER_FLASH_SIZE, fp);
+		fclose(fp);
+		s8Ret = M2M_SUCCESS;
+	}
+	else
+	{
+		printf("(ERR)Cannot Open Fw image <%s>\n", pcFwFile);
+	}
+	return s8Ret;
+}
+
+/**************************************************************/
 static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, char *pcFwFile, uint8 port, uint8* vflash)
 {
 	sint8	ret = M2M_ERR_FAIL;
@@ -619,9 +642,60 @@ sint8 TlsCertStoreLoad(tenuTLSCertStoreType enuStore, char *pcFwFile, uint8 port
 	return ret;
 }
 
+struct arg_lit *verb, *help, *version;
+struct arg_lit *nokey, *erase;
+struct arg_lit *rsa, *ecdsa, *dir, *all, *privkey;
+struct arg_str *mode, *port;
+struct arg_int *level;
+struct arg_file *fwimg, *out;
+struct arg_end *end;
+
 /**************************************************************/
 int main(int argc, char* argv[])
 {
+    void *argtable[] = {
+        help    = arg_litn(NULL, "help", 0, 1, "display this help and exit"),
+        version = arg_litn(NULL, "version", 0, 1, "display version info and exit"),
+        mode 	= arg_str1(NULL, NULL, "<mode>", "tls or rootcert"),
+        verb    = arg_litn("v", "verbose", 0, 1, "verbose output"),
+        rsa     = arg_lit0(NULL, "rsa", "rsa cert"),
+        ecdsa     = arg_lit0(NULL, "ecdsa", "ecdsa cert"),
+        dir     = arg_lit0(NULL, "dir", "dir"),
+        fwimg   = arg_file1(NULL, "fwimg", "<fwimg>", "firmware image"),
+        out    = arg_file0(NULL, "out", "<output>", "output files"),
+        all     = arg_lit0(NULL, "all", "all"),
+        privkey     = arg_lit0(NULL, "privkey", "privkey"),
+        end     = arg_end(20),
+    };
+
+    int exitcode = 0;
+    char progname[] = "tls_cert_flash_tool.exe";
+
+    int nerrors;
+    nerrors = arg_parse(argc,argv,argtable);
+
+    /* special case: '--help' takes precedence over error reporting */
+    if (help->count > 0 || mode->count == 0)
+    {
+        printf("Usage: %s", progname);
+        arg_print_syntax(stdout, argtable, "\n");
+        printf("Demonstrate command-line parsing in argtable3.\n\n");
+        arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+        exitcode = 0;
+        goto exit;
+    }
+
+    /* If the parser returned any errors then display them and exit */
+    if (nerrors > 0)
+    {
+        /* Display the error details contained in the arg_end struct.*/
+        arg_print_errors(stdout, end, progname);
+        printf("Try '%s --help' for more information.\n", progname);
+        exitcode = 1;
+        goto exit;
+    }
+
+
 	int					ret		= 1;
 	uint8				bPause	= 0;
 	tenuWriteMode		enuMode;
@@ -629,135 +703,121 @@ int main(int argc, char* argv[])
 	uint32				u32TlsSrvSecSz;
 
 	printName();
-	if(!parseCmdLineArgs(argc, argv, &strCmdLineOpt))
+	if(strcmp(mode->sval[0], "write") == 0)
 	{
-		if(strCmdLineOpt.enuCmd == CMD_WRITE)
-		{
-			/*
-				Do a WRITE command.
-			*/
-			tstrWriteOptions	*pstrWRITE = &strCmdLineOpt.strWriteOptions;
-            uint8* vflash = NULL;
-            long szvflash = 0;
+        tstrWriteOptions *pstrWRITE = &strCmdLineOpt.strWriteOptions;
+        uint8 *vflash = NULL;
+        long szvflash = 0;
 
-			if(pstrWRITE->pcServerCertFile == NULL)
-			{
-				printf("Server Certificate File MUST Be Supplied\n");
-				bPause = 1;
-				goto __EXIT;
-			}
-			if((pstrWRITE->pcPrivKeyFile == NULL) && (pstrWRITE->bIsKeyAvail))
-			{
-				printf("Server Private Key File MUST Be Supplied\n");
-				bPause = 1;
-				goto __EXIT;
-			}
-
-			if(pstrWRITE->pcflash_path)
-            {
-                FILE * fp;
-
-                fp = fopen(pstrWRITE->pcflash_path,"rb");
-                if (fp)
-                {
-                    fseek (fp, 0, SEEK_END);   // non-portable
-                    szvflash=ftell (fp);
-                    rewind(fp);
-
-                    vflash = malloc(szvflash);
-                    if(vflash)
-                    {
-						memset(vflash,0xFF,szvflash);
-                        M2M_PRINT("Reading vflash from %s\n", pstrWRITE->pcflash_path);
-                        fread(vflash,1,szvflash,fp);
-                    }
-                    fclose (fp);
-                }
-            }
-
-			if(pstrWRITE->bEraseBeforeWrite)
-			{
-				/*
-					Clean write after erasing the current TLS Certificate section contents.
-				*/
-				enuMode = TLS_SRV_SEC_MODE_WRITE;
-			}
-			else
-			{
-				/*
-					Write to the end of the current TLS Certificate section.
-				*/
-				enuMode = TLS_SRV_SEC_MODE_APPEND;
-				if(TlsCertStoreLoad(pstrWRITE->enuCertStore, pstrWRITE->pcFwPath, pstrWRITE->req_serial_number, vflash) != M2M_SUCCESS)
-				{
-					bPause = 1;
-					goto __EXIT;
-				}
-			}
-
-			/*
-				Modify the TLS Certificate Store Contents.
-			*/
-			ret = TlsCertStoreWriteCertChain(pstrWRITE->pcPrivKeyFile, pstrWRITE->pcServerCertFile, pstrWRITE->pcCADir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
-			if(ret == M2M_SUCCESS)
-			{
-				/*
-					Write the TLS Certificate Section buffer to the chosen destination,
-					either to the firmware image or the WINC stacked flash directly.
-				*/
-				ret = TlsCertStoreSave(pstrWRITE->enuCertStore, pstrWRITE->pcFwPath, pstrWRITE->req_serial_number, vflash);
-			}
-			bPause = pstrWRITE->u8PauseAfterFinish;
-
-            if(vflash)
-            {
-                FILE *fp;
-                fp = fopen(pstrWRITE->pcflash_path,"wb");
-                if(fp != NULL)
-                {
-                    M2M_PRINT("Saving vflash to %s\n", pstrWRITE->pcflash_path);
-                    fwrite(vflash,1,szvflash,fp);
-                    fclose(fp);
-                }
-            }
-
+        if (pstrWRITE->pcServerCertFile == NULL) {
+                printf("Server Certificate File MUST Be Supplied\n");
+                bPause = 1;
+                goto __EXIT;
 		}
-		else if(strCmdLineOpt.enuCmd == CMD_READ)
+		if((pstrWRITE->pcPrivKeyFile == NULL) && (pstrWRITE->bIsKeyAvail))
+		{
+			printf("Server Private Key File MUST Be Supplied\n");
+			bPause = 1;
+			goto __EXIT;
+		}
+
+		if(pstrWRITE->pcflash_path)
+		{
+			FILE * fp;
+
+			fp = fopen(pstrWRITE->pcflash_path,"rb");
+			if (fp)
+			{
+				fseek (fp, 0, SEEK_END);   // non-portable
+				szvflash=ftell (fp);
+				rewind(fp);
+
+				vflash = malloc(szvflash);
+				if(vflash)
+				{
+					memset(vflash,0xFF,szvflash);
+					M2M_PRINT("Reading vflash from %s\n", pstrWRITE->pcflash_path);
+					fread(vflash,1,szvflash,fp);
+				}
+				fclose (fp);
+			}
+		}
+
+		if(pstrWRITE->bEraseBeforeWrite)
 		{
 			/*
-				Do a READ command.
+				Clean write after erasing the current TLS Certificate section contents.
 			*/
-			tstrReadOptions		*pstrREAD = &strCmdLineOpt.strReadOptions;
-			if((pstrREAD->bWriteToFile) && (pstrREAD->pcOutPath == NULL))
+			enuMode = TLS_SRV_SEC_MODE_WRITE;
+		}
+		else
+		{
+			/*
+				Write to the end of the current TLS Certificate section.
+			*/
+			enuMode = TLS_SRV_SEC_MODE_APPEND;
+			if(TlsCertStoreLoad(pstrWRITE->enuCertStore, pstrWRITE->pcFwPath, pstrWRITE->req_serial_number, vflash) != M2M_SUCCESS)
 			{
-				printf("Please specify output path for dumping certificate files\n");
 				bPause = 1;
 				goto __EXIT;
 			}
+		}
 
-			ret = TlsCertStoreLoad(pstrREAD->enuCertStore, pstrREAD->pcFwPath, pstrREAD->req_serial_number, NULL);
+		/*
+			Modify the TLS Certificate Store Contents.
+		*/
+		ret = TlsCertStoreWriteCertChain(pstrWRITE->pcPrivKeyFile, pstrWRITE->pcServerCertFile, pstrWRITE->pcCADir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
+		if(ret == M2M_SUCCESS)
+		{
+			/*
+				Write the TLS Certificate Section buffer to the chosen destination,
+				either to the firmware image or the WINC stacked flash directly.
+			*/
+			ret = TlsCertStoreSave(pstrWRITE->enuCertStore, pstrWRITE->pcFwPath, pstrWRITE->req_serial_number, vflash);
+		}
+		bPause = pstrWRITE->u8PauseAfterFinish;
+
+		if(vflash)
+		{
+			FILE *fp;
+			fp = fopen(pstrWRITE->pcflash_path,"wb");
+			if(fp != NULL)
+			{
+				M2M_PRINT("Saving vflash to %s\n", pstrWRITE->pcflash_path);
+				fwrite(vflash,1,szvflash,fp);
+				fclose(fp);
+			}
+		}
+
+	}
+	else if(strcmp(mode->sval[0], "read") == 0)
+	{
+		if (fwimg->count == 1)
+		{
+			ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwimg->filename[0], 0, NULL);
 			if(ret != M2M_SUCCESS)
 			{
 				bPause = 1;
 				goto __EXIT;
 			}
+		}
 
-			/*
-				Load the TLS Certificate Store into memory
-			*/
-			TlsSrvSecReadInit(gau8TlsSrvSec);
-			TlsSrvSecDumpContents(pstrREAD->bIsRsa, pstrREAD->bIsEcdsa, pstrREAD->bPrintPriv, pstrREAD->bIsDumpAll, pstrREAD->bIsListFiles, pstrREAD->bWriteToFile, pstrREAD->pcOutPath);
-			bPause = 1;
-		}
-		else
-		{
-			bPause = 1;
-		}
+		/*
+			Load the TLS Certificate Store into memory
+		*/
+		TlsSrvSecReadInit(gau8TlsSrvSec);
+		TlsSrvSecDumpContents(rsa->count, ecdsa->count, privkey->count, all->count, dir->count, out->count, out->filename[0]);
+		bPause = 1;
 	}
 	else
 	{
 		bPause = 1;
 	}
+
+exit:
+    /* deallocate each non-null entry in argtable[] */
+    arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
+    return exitcode;
 
 __EXIT:
 
