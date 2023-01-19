@@ -300,7 +300,6 @@ int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash
         }
         CryptoX509DeleteContext(&strX509Root);
     }
-END:
     return ret;
 }
 
@@ -336,8 +335,7 @@ static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum)
 	return s8Ret;
 }
 
-/**************************************************************/
-static sint8 RootCertStoreLoadFromFwImage(char *pcFwFile)
+static sint8 RootCertStoreLoadFromFwImage(const char *pcFwFile)
 {
 	FILE	*fp;
 	sint8	s8Ret	= M2M_ERR_FAIL;
@@ -347,27 +345,6 @@ static sint8 RootCertStoreLoadFromFwImage(char *pcFwFile)
 	{
 		fseek(fp, M2M_TLS_ROOTCER_FLASH_OFFSET, SEEK_SET);
 		fread(gau8RootCertMem, 1, M2M_TLS_ROOTCER_FLASH_SIZE, fp);
-		fclose(fp);
-		s8Ret = M2M_SUCCESS;
-	}
-	else
-	{
-		printf("(ERR)Cannot Open Fw image <%s>\n", pcFwFile);
-	}
-	return s8Ret;
-}
-
-/**************************************************************/
-static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *pcFwFile)
-{
-	FILE	*fp;
-	sint8	s8Ret	= M2M_ERR_FAIL;
-
-	fp = fopen(pcFwFile, "rb+");
-	if(fp)
-	{
-		fseek(fp, M2M_TLS_SERVER_FLASH_OFFSET, SEEK_SET);
-		fwrite(pu8TlsSrvFlashSecContent, 1, M2M_TLS_SERVER_FLASH_SIZE, fp);
 		fclose(fp);
 		s8Ret = M2M_SUCCESS;
 	}
@@ -398,7 +375,26 @@ static sint8 RootCertStoreSaveToFlash(uint8 *pu8RootCertFlashSecContent, uint8 u
 	return s8Ret;
 }
 
-/**************************************************************/
+static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *pcFwFile)
+{
+	FILE	*fp;
+	sint8	s8Ret	= M2M_ERR_FAIL;
+
+	fp = fopen(pcFwFile, "rb+");
+	if(fp)
+	{
+		fseek(fp, M2M_TLS_SERVER_FLASH_OFFSET, SEEK_SET);
+		fwrite(pu8TlsSrvFlashSecContent, 1, M2M_TLS_SERVER_FLASH_SIZE, fp);
+		fclose(fp);
+		s8Ret = M2M_SUCCESS;
+	}
+	else
+	{
+		printf("(ERR)Cannot Open Fw image <%s>\n", pcFwFile);
+	}
+	return s8Ret;
+}
+
 static sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, char *pcFwFile, uint8 port, uint8* vflash)
 {
 	sint8	ret = M2M_ERR_FAIL;
@@ -427,6 +423,7 @@ static sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, char *pcFwFile, u
 	}
 	return ret;
 }
+
 
 int DumpRootCerts(void)
 {
