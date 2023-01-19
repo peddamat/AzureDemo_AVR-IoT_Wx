@@ -276,6 +276,7 @@ int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash
     {
         if(UpdateRootList(&strX509Root) == 0)
         {
+            ret = 0;
 #ifdef ENABLE_VERIFICATION //Enable verification or print array
 
             {
@@ -383,8 +384,8 @@ static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *p
 	fp = fopen(pcFwFile, "rb+");
 	if(fp)
 	{
-		fseek(fp, M2M_TLS_SERVER_FLASH_OFFSET, SEEK_SET);
-		fwrite(pu8TlsSrvFlashSecContent, 1, M2M_TLS_SERVER_FLASH_SIZE, fp);
+		fseek(fp, M2M_TLS_ROOTCER_FLASH_OFFSET, SEEK_SET);
+		fwrite(pu8TlsSrvFlashSecContent, 1, M2M_TLS_ROOTCER_FLASH_SIZE, fp);
 		fclose(fp);
 		s8Ret = M2M_SUCCESS;
 	}
@@ -395,7 +396,7 @@ static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *p
 	return s8Ret;
 }
 
-static sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, char *pcFwFile, uint8 port, uint8* vflash)
+sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8* vflash)
 {
 	sint8	ret = M2M_ERR_FAIL;
 

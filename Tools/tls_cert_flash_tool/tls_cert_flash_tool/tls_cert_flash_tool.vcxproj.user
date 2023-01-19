@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
-    <LocalDebuggerCommandArguments>write --help</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>update atwinc1500.bin --ca_dir rootCerts</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>..\Debug_UART</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

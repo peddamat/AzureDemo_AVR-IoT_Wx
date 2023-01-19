@@ -54,7 +54,10 @@ INCLUDES
 #include "root_setup.h"
 #include "tls_srv_sec.h"
 
+extern void ListDirectoryContents(const char *pcDir, char *pcExt, char ***ppacFileList, uint32 *pu32ListSize);
 extern sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCertFile, const char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode);
+extern int ReadFileToBuffer(char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize);
+
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 MACROS
@@ -141,13 +144,13 @@ static sint8 TlsCertStoreSaveToFlash(uint8 *pu8TlsSrvFlashSecContent, uint8 u8Po
     sint8 s8Ret = M2M_ERR_FAIL;
 
     if (programmer_init(&u8PortNum, 0) == M2M_SUCCESS) {
-        dump_flash("Before_tls.bin");
+        // dump_flash("Before_tls.bin");
 
-        if (programmer_erase(M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE, vflash) == M2M_SUCCESS) {
-            s8Ret = programmer_write(pu8TlsSrvFlashSecContent, M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE, vflash);
+        if (programmer_erase(M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE, NULL) == M2M_SUCCESS) {
+            s8Ret = programmer_write(pu8TlsSrvFlashSecContent, M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE, NULL);
         }
 
-        dump_flash("After_tls.bin");
+        // dump_flash("After_tls.bin");
 
         programmer_deinit();
     }
@@ -194,33 +197,8 @@ static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFil
     return ret;
 }
 
-int ReadCertFromDisk(char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize) {
-    FILE *fp;
-    int ret = M2M_ERR_FAIL;
-
-    fp = fopen(pcFileName, "rb");
-    if (fp) {
-        uint32 u32FileSize;
-        uint8 *pu8Buf;
-
-        fseek(fp, 0, SEEK_END);
-        u32FileSize = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
-
-        pu8Buf = (uint8 *)malloc(u32FileSize);
-        if (pu8Buf != NULL) {
-            fread(pu8Buf, 1, u32FileSize, fp);
-            *pu32FileSize = u32FileSize;
-            *ppu8FileData = pu8Buf;
-            ret = M2M_SUCCESS;
-        }
-        fclose(fp);
-    }
-    return ret;
-}
-
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-Startup
+STARTUP
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 int HandleReadCmd(const char *fwImg, const char *outfile) {
@@ -246,10 +224,10 @@ int HandleReadCmd(const char *fwImg, const char *outfile) {
     return 0;
 }
 
-int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase) {
+int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, int erase)
+{
     int ret = M2M_ERR_FAIL;
     uint32 u32TlsSrvSecSz;
-
     tenuWriteMode enuMode;
 
     if (cert == NULL) {
@@ -258,46 +236,72 @@ int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, con
     }
 
     if (erase == 1) {
-        /* Clean write after erasing the current TLS Certificate section contents.  */
+        // Clean write after erasing the current TLS Certificate section contents.
         enuMode = TLS_SRV_SEC_MODE_WRITE;
     } else {
-        /* Write to the end of the current TLS Certificate section.  */
+        // Write to the end of the current TLS Certificate section.
         enuMode = TLS_SRV_SEC_MODE_APPEND;
         if (TlsCertStoreLoad(enuMode, outfile, 0, NULL) != M2M_SUCCESS) {
             return ret;
         }
     }
 
-    /* Modify the TLS Certificate Store Contents.  */
+    // Modify the TLS Certificate Store Contents.
     ret = TlsCertStoreWriteCertChain(key, cert, ca_dir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
     if (ret == M2M_SUCCESS) {
-        /* Write the TLS Certificate Section buffer to the chosen destination,
-                either to the firmware image or the WINC stacked flash directly.  */
+        // Write the TLS Certificate Section buffer to the chosen destination,
+        // either to the firmware image or the WINC stacked flash directly.
         ret = TlsCertStoreSave(enuMode, fwImg, 0, NULL);
     }
+    return ret;
+}
+
+int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
+    int ret = M2M_ERR_FAIL;
+	uint32	u32Idx;
+	uint32	u32nCerts;
+	uint32	u32CertSz;
+	uint8	*pu8RootCert;
+	char	**ppCertNames;
 
     ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
     if (ret != M2M_SUCCESS) {
         return ret;
     }
 
-#if 0
-	for(int i = 0; i < 1; i++)
+	ListDirectoryContents(ca_dir, "cer", &ppCertNames, &u32nCerts);
+	if(u32nCerts != 0)
 	{
-		uint32	u32RootCertSz;
-		uint8	*pu8RootCertBuff;
-
-		if(ReadCertFromDisk(in->filename[i], &pu8RootCertBuff, &u32RootCertSz) == M2M_SUCCESS)
+		for(u32Idx = 0; u32Idx < u32nCerts; u32Idx ++)
 		{
-			if(WriteRootCertificate(pu8RootCertBuff, u32RootCertSz, NULL) != 0)
+			// Reads cert from disk into pu8RootCert
+			if(ReadFileToBuffer(ppCertNames[u32Idx], &pu8RootCert, &u32CertSz) == M2M_SUCCESS)
 			{
-				printf("Error writing certificate.\n");
-				ret = -1;
-				break;
+				if(WriteRootCertificate(pu8RootCert, u32CertSz, NULL) != 0)
+				{
+					printf("Error Writing certificate.\n");
+					free(pu8RootCert);
+					return M2M_ERR_FAIL;
+				}
+				free(pu8RootCert);
 			}
 		}
+
+		RootCertStoreSave(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
 	}
-#endif
+	else
+	{
+		printf("Unable to find certificates\r\n");
+		ret = M2M_ERR_FAIL;
+	}
+	return ret;
+}
+
+int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase) {
+    int ret = M2M_ERR_FAIL;
+
+    // ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, erase);
+    ret = UpdateRootCertStore(fwImg, ca_dir, erase);
 }
 
 #define REG_EXTENDED 1
@@ -316,9 +320,9 @@ int main(int argc, char **argv) {
     struct arg_file *infiles2 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile2 = arg_file0("o", NULL, "<output>", "output file (default is \"-\")");
     struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
-    struct arg_file *cert = arg_file1(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
+    struct arg_file *cert = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
     struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
-    struct arg_file *ca_dir = arg_file1(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate.CA cert directory");
+    struct arg_file *ca_dir = arg_file1(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
     struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
     struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
     struct arg_end *end2 = arg_end(20);
