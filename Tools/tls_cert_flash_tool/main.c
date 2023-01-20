@@ -58,7 +58,6 @@ extern void ListDirectoryContents(const char *pcDir, char *pcExt, char ***ppacFi
 extern sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCertFile, const char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode);
 extern int ReadFileToBuffer(char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize);
 
-
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 MACROS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
@@ -85,7 +84,6 @@ typedef enum {
 GLOBALS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-static uint8 gau8RootCertMem[M2M_TLS_ROOTCER_FLASH_SIZE];
 static uint8 gau8TlsSrvSec[M2M_TLS_SERVER_FLASH_SIZE];
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
@@ -204,6 +202,8 @@ READ COMMAND
 int HandleReadCmd(const char *fwImg, const char *outfile) {
     int ret = M2M_ERR_FAIL;
 
+    printf("Parsing TLS Store Contents\n");
+
     // Dump TLS Store contents
     ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL);
     if (ret != M2M_SUCCESS) {
@@ -212,6 +212,8 @@ int HandleReadCmd(const char *fwImg, const char *outfile) {
 
     TlsSrvSecReadInit(gau8TlsSrvSec);
     TlsSrvSecDumpContents(1, 1, 1, 1, 1, 1, outfile);
+
+    printf("Parsing Root Cert Store Contents\n");
 
     // Dump Root Cert Store Contents
     ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
@@ -228,14 +230,13 @@ int HandleReadCmd(const char *fwImg, const char *outfile) {
 UPDATE COMMAND
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, tenuWriteMode enuMode)
-{
+int UpdateTlsStore(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, tenuWriteMode enuMode) {
     int ret = M2M_ERR_FAIL;
     uint32 u32TlsSrvSecSz;
 
-	if (TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS) {
-		return ret;
-	}
+    if (TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS) {
+        return ret;
+    }
 
     ret = TlsCertStoreWriteCertChain(key, cert, ca_dir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
     if (ret == M2M_SUCCESS) {
@@ -248,50 +249,44 @@ int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, cons
 
 int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
     int ret = M2M_ERR_FAIL;
-	uint32	u32Idx;
-	uint32	u32nCerts;
-	uint32	u32CertSz;
-	uint8	*pu8RootCert;
-	char	**ppCertNames;
+    uint32 u32Idx;
+    uint32 u32nCerts;
+    uint32 u32CertSz;
+    uint8 *pu8RootCert;
+    char **ppCertNames;
 
     ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
     if (ret != M2M_SUCCESS) {
         return ret;
     }
 
-	ListDirectoryContents(ca_dir, "cer", &ppCertNames, &u32nCerts);
-	if(u32nCerts != 0)
-	{
-		for(u32Idx = 0; u32Idx < u32nCerts; u32Idx ++)
-		{
-			// Reads cert from disk into pu8RootCert
-			if(ReadFileToBuffer(ppCertNames[u32Idx], &pu8RootCert, &u32CertSz) == M2M_SUCCESS)
-			{
-				if(WriteRootCertificate(pu8RootCert, u32CertSz, NULL) != 0)
-				{
-					printf("Error Writing certificate.\n");
-					free(pu8RootCert);
-					return M2M_ERR_FAIL;
-				}
-				free(pu8RootCert);
-			}
-		}
+    ListDirectoryContents(ca_dir, "cer", &ppCertNames, &u32nCerts);
+    if (u32nCerts != 0) {
+        for (u32Idx = 0; u32Idx < u32nCerts; u32Idx++) {
+            // Reads cert from disk into pu8RootCert
+            if (ReadFileToBuffer(ppCertNames[u32Idx], &pu8RootCert, &u32CertSz) == M2M_SUCCESS) {
+                if (WriteRootCertificate(pu8RootCert, u32CertSz, NULL) != 0) {
+                    printf("Error Writing certificate.\n");
+                    free(pu8RootCert);
+                    return M2M_ERR_FAIL;
+                }
+                free(pu8RootCert);
+            }
+        }
 
-		RootCertStoreSave(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
-	}
-	else
-	{
-		printf("Unable to find certificates\r\n");
-		ret = M2M_ERR_FAIL;
-	}
-	return ret;
+        RootCertStoreSave(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+    } else {
+        printf("Unable to find certificates\r\n");
+        ret = M2M_ERR_FAIL;
+    }
+    return ret;
 }
 
 int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase) {
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
-    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
+    // ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
 }
 
@@ -304,12 +299,12 @@ int EraseBuffer(const char *fwImg) {
     sint8 ret = M2M_ERR_FAIL;
     uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
-	// Clear TLS Cert Store buffer
-	memset(&gau8TlsSrvSec, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
-	tstrTlsSrvSecHdr *gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)gau8TlsSrvSec;
-	memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
-	gpstrTlsSrvSecHdr->u32nEntries = 0;
-	gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
+    // Clear TLS Cert Store buffer
+    memset(&gau8TlsSrvSec, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
+    tstrTlsSrvSecHdr *gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)gau8TlsSrvSec;
+    memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
+    gpstrTlsSrvSecHdr->u32nEntries = 0;
+    gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
 
     ret = TlsCertStoreSaveToFwImage(&gau8TlsSrvSec, fwImg);
 
@@ -324,6 +319,10 @@ int HandleEraseCmd(const char *fwImg, int all) {
     EraseBuffer(fwImg);
     return 0;
 }
+
+/*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+MAIN
+*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 #define REG_EXTENDED 1
 #define REG_ICASE (REG_EXTENDED << 1)

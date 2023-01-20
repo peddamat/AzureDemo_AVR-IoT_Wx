@@ -730,9 +730,7 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
         tstrTlsSrvSecReadEntry *pstrCur;
 
         if (!memcmp(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
-            /*
-                DIR Command
-            */
+            /* DIR Command */
             if (bListFiles) {
                 if ((gpstrRsaChain != NULL) && (bDumpRsa)) {
                     M2M_PRINT("<RSA CERTIFICATE CHAIN FILE LIST>\n\n");
