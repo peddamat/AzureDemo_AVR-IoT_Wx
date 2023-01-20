@@ -241,7 +241,7 @@ int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, cons
     } else {
         // Write to the end of the current TLS Certificate section.
         enuMode = TLS_SRV_SEC_MODE_APPEND;
-        if (TlsCertStoreLoad(enuMode, outfile, 0, NULL) != M2M_SUCCESS) {
+        if (TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS) {
             return ret;
         }
     }
@@ -251,7 +251,7 @@ int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, cons
     if (ret == M2M_SUCCESS) {
         // Write the TLS Certificate Section buffer to the chosen destination,
         // either to the firmware image or the WINC stacked flash directly.
-        ret = TlsCertStoreSave(enuMode, fwImg, 0, NULL);
+        ret = TlsCertStoreSave(TLS_STORE_FW_IMG, fwImg, 0, NULL);
     }
     return ret;
 }
@@ -300,7 +300,7 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
 int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase) {
     int ret = M2M_ERR_FAIL;
 
-    // ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, erase);
+    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, erase);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
 }
 
@@ -322,7 +322,7 @@ int main(int argc, char **argv) {
     struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
     struct arg_file *cert = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
     struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
-    struct arg_file *ca_dir = arg_file1(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
+    struct arg_file *ca_dir = arg_file0(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
     struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
     struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
     struct arg_end *end2 = arg_end(20);
