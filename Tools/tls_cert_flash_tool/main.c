@@ -198,7 +198,7 @@ static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFil
 }
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-STARTUP
+READ COMMAND
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 int HandleReadCmd(const char *fwImg, const char *outfile) {
@@ -224,29 +224,19 @@ int HandleReadCmd(const char *fwImg, const char *outfile) {
     return 0;
 }
 
-int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, int erase)
+/*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+UPDATE COMMAND
+*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+
+int UpdateTlsStore(const char* fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, tenuWriteMode enuMode)
 {
     int ret = M2M_ERR_FAIL;
     uint32 u32TlsSrvSecSz;
-    tenuWriteMode enuMode;
 
-    if (cert == NULL) {
-        printf("Server Certificate File MUST Be Supplied\n");
-        return ret;
-    }
+	if (TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS) {
+		return ret;
+	}
 
-    if (erase == 1) {
-        // Clean write after erasing the current TLS Certificate section contents.
-        enuMode = TLS_SRV_SEC_MODE_WRITE;
-    } else {
-        // Write to the end of the current TLS Certificate section.
-        enuMode = TLS_SRV_SEC_MODE_APPEND;
-        if (TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS) {
-            return ret;
-        }
-    }
-
-    // Modify the TLS Certificate Store Contents.
     ret = TlsCertStoreWriteCertChain(key, cert, ca_dir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
     if (ret == M2M_SUCCESS) {
         // Write the TLS Certificate Section buffer to the chosen destination,
@@ -299,9 +289,40 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
 
 int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase) {
     int ret = M2M_ERR_FAIL;
+    tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
-    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, erase);
+    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
+}
+
+/*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+ERASE COMMAND
+*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+
+int EraseBuffer(const char *fwImg) {
+    FILE *fp;
+    sint8 ret = M2M_ERR_FAIL;
+    uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
+
+	// Clear TLS Cert Store buffer
+	memset(&gau8TlsSrvSec, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
+	tstrTlsSrvSecHdr *gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)gau8TlsSrvSec;
+	memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
+	gpstrTlsSrvSecHdr->u32nEntries = 0;
+	gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
+
+    ret = TlsCertStoreSaveToFwImage(&gau8TlsSrvSec, fwImg);
+
+    ret = RootCertStoreLoadFromFwImage(fwImg);
+    InitializeMemory();
+    ret = RootCertStoreSave(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+
+    return ret;
+}
+
+int HandleEraseCmd(const char *fwImg, int all) {
+    EraseBuffer(fwImg);
+    return 0;
 }
 
 #define REG_EXTENDED 1
@@ -329,12 +350,22 @@ int main(int argc, char **argv) {
     void *argtable2[] = {update_cmd, infiles2, outfile2, key, cert, pf_bin, ca_dir, erase, help2, end2};
     int nerrors2;
 
+    struct arg_rex *erase_cmd = arg_rex1(NULL, NULL, "erase", NULL, REG_ICASE, NULL);
+    struct arg_file *infiles3 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_file *outfile3 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
+    struct arg_lit *erase_all = arg_lit0("a", "all", "Erase TLS and Root Cert Stores");
+    struct arg_lit *help3 = arg_lit0("h", "help", "Show help");
+    struct arg_end *end3 = arg_end(20);
+    void *argtable3[] = {erase_cmd, infiles3, outfile3, erase_all, help3, end3};
+    int nerrors3;
+
     const char *progname = "atwin1500_fwtool.exe";
     int exitcode = 0;
 
     /* verify all argtable[] entries were allocated sucessfully */
     if (arg_nullcheck(argtable1) != 0 ||
-        arg_nullcheck(argtable2) != 0) {
+        arg_nullcheck(argtable2) != 0 ||
+        arg_nullcheck(argtable3) != 0) {
         /* NULL entries were detected, some allocations must have failed */
         printf("%s: insufficient memory\n", progname);
         exitcode = 1;
@@ -343,11 +374,14 @@ int main(int argc, char **argv) {
 
     nerrors1 = arg_parse(argc, argv, argtable1);
     nerrors2 = arg_parse(argc, argv, argtable2);
+    nerrors3 = arg_parse(argc, argv, argtable3);
 
     if (nerrors1 == 0) {
         exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0]);
     } else if (nerrors2 == 0) {
         exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count);
+    } else if (nerrors3 == 0) {
+        exitcode = HandleEraseCmd(infiles3->filename[0], erase_all->count);
     } else {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {
@@ -388,7 +422,9 @@ int main(int argc, char **argv) {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
             printf("       %s ", progname);
-            arg_print_syntax(stdout, argtable2, "\n\n");
+            arg_print_syntax(stdout, argtable2, "\n");
+            printf("       %s ", progname);
+            arg_print_syntax(stdout, argtable3, "\n\n");
             printf("For a specific command help, use <%s <CMD> --help>\n\n", progname);
         }
     }
@@ -396,6 +432,7 @@ int main(int argc, char **argv) {
 __EXIT:
     arg_freetable(argtable1, sizeof(argtable1) / sizeof(argtable1[0]));
     arg_freetable(argtable2, sizeof(argtable2) / sizeof(argtable2[0]));
+    arg_freetable(argtable3, sizeof(argtable3) / sizeof(argtable3[0]));
 
     return exitcode;
 }

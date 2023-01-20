@@ -27,6 +27,7 @@ int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash
 sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, const char* pcFwFile, uint8 port, uint8* vflash);
 sint8 RootCertStoreLoad(tenuRootCertStoreType enuStore, const char* pcFwFile, uint8 port, uint8* vflash);
 static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum);
-static sint8 RootCertStoreLoadFromFwImage(char* pcFwFile);
+sint8 RootCertStoreLoadFromFwImage(const char* pcFwFile);
+int InitializeMemory(void);
 int DumpRootCerts(void);
 #endif  //__ROOT_CERT_SETUP_H__

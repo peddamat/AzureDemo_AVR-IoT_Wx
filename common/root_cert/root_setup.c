@@ -198,6 +198,18 @@ static uint16 writeRootCertEntry(uint8 *pu8WriteBuff, txtrX509CertInfo *pstrRoot
     return u16WriteSz;
 }
 
+int InitializeMemory(void) {
+
+    uint8                   au8StartPattern[] = ROOT_CERT_FLASH_START_PATTERN;
+    tstrRootCertFlashHeader *pstrRootFlashHdr;
+
+    memset(&gau8RootCertMem, 0xFF, M2M_TLS_ROOTCER_FLASH_SIZE);
+
+    pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);
+    pstrRootFlashHdr->u32nCerts = 0;
+    m2m_memcpy(pstrRootFlashHdr->au8StartPattern, au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH);
+}
+
 /************************************************/
 static sint8 UpdateRootList(txtrX509CertInfo *pstrRootCert)
 {
@@ -336,7 +348,7 @@ static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum)
 	return s8Ret;
 }
 
-static sint8 RootCertStoreLoadFromFwImage(const char *pcFwFile)
+sint8 RootCertStoreLoadFromFwImage(const char *pcFwFile)
 {
 	FILE	*fp;
 	sint8	s8Ret	= M2M_ERR_FAIL;
