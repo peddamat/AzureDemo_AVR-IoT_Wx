@@ -1,6 +1,6 @@
 #include "m2m_types.h"
-#include <Windows.h>
-#include <wincrypt.h>
+// #include <Windows.h>
+// #include <wincrypt.h>
 
 void memcpy_dbg(void *dst, void *src, int count)
 {
@@ -47,20 +47,20 @@ void restore_scratch_mem_idx(uint32 mem_idx)
 	{
 		mem_idx = SCRATCH_MEM_MAX_SIZE;
 	}
-	
+
 	if(mem_idx > g_scratch_mem_idx)
 		g_scratch_mem_idx = mem_idx;
 }
 
-static HCRYPTPROV			ghProv;	/* Crypto context for random bytes */
+// static HCRYPTPROV			ghProv;	/* Crypto context for random bytes */
 
 void getRand(uint8 *pu8buf, uint32 u32n)
 {
-	static int isInit = 0;
+	// static int isInit = 0;
 
-	if(!isInit)
-	{
-		CryptAcquireContext(&ghProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
-	}
-	CryptGenRandom(ghProv, u32n, pu8buf);
+	// if(!isInit)
+	// {
+	// 	CryptAcquireContext(&ghProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);
+	// }
+	// CryptGenRandom(ghProv, u32n, pu8buf);
 }
