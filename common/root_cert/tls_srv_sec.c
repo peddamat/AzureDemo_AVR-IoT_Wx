@@ -487,7 +487,7 @@ __ERR:
 /**************************************************************/
 static sint8 WriteBufferToFile(uint8 *pu8Buff, uint32 u32WriteSz, char *pcFwFile) {
     sint8 s8Ret = M2M_ERR_FAIL;
-#ifdef WIN32
+#if defined(WIN32) || defined(POSIX)
     FILE *fp;
 
     fp = fopen(pcFwFile, "wb");
@@ -587,9 +587,7 @@ static tstrTlsSrvSecReadEntry *TlsLoadCertChain(char *pcTlsChainFile) {
                 break;
             }
 
-            /*
-                INSERTION.
-            */
+            /* INSERTION.  */
             pstrNew->pstrNext = NULL;
             if (pstrHead == NULL) {
                 pstrHead = pstrNew;
@@ -605,7 +603,7 @@ static tstrTlsSrvSecReadEntry *TlsLoadCertChain(char *pcTlsChainFile) {
 }
 
 /**************************************************************/
-static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPrivKey, uint8 bWriteToFile, uint8 bDumpWholeChain, char *pcKeyWord, const char *pcOutPath) {
+static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPrivKey, uint8 bDumpWholeChain, char *pcKeyWord, const char *pcOutPath, int verbose) {
     sint8 ret = M2M_ERR_FAIL;
     char acFileName[324];
 
@@ -616,7 +614,7 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
         ret = M2M_SUCCESS;
         while (pstrCur != NULL) {
             if (pstrCur->bIsCert) {
-                if (bWriteToFile) {
+                if (strcmp(pcOutPath, "") != 0) {
                     strcpy(acFileName, pcOutPath);
                     if ((acFileName[strlen(pcOutPath)] != '/') && (acFileName[strlen(pcOutPath)] != '\\')) {
                         strcat(acFileName, "/");
@@ -639,7 +637,7 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
                         break;
                     }
                 } else {
-                    if (CryptoX509CertDecode(pstrCur->pu8FileContent, (uint16)pstrCur->u32FileSz, &pstrCur->strX509, 1) != M2M_SUCCESS) {
+                    if (CryptoX509CertDecode(pstrCur->pu8FileContent, (uint16)pstrCur->u32FileSz, &pstrCur->strX509, verbose) != M2M_SUCCESS) {
                         ret = M2M_ERR_FAIL;
                         break;
                     }
@@ -652,16 +650,19 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
             } else {
                 if (bPrintPrivKey) {
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
-                    M2M_PRINT("Private-Key: (%u bit)\n", pstrKey->u16NSize * 8);
-                    K_DUMP("modulus (N):", pstrKey->pu8N, pstrKey->u16NSize);
-                    K_DUMP("publicExponent (e):", pstrKey->pu8e, pstrKey->u16eSize);
-                    K_DUMP("privateExponent (d):", pstrKey->pu8d, pstrKey->u16dSize);
-                    K_DUMP("prim1 (p):", pstrKey->pu8p, pstrKey->u16PSize);
-                    K_DUMP("prime2 (q):", pstrKey->pu8q, pstrKey->u16QSize);
-                    K_DUMP("exponent1 (dP):", pstrKey->pu8dP, pstrKey->u16dPSize);
-                    K_DUMP("exponent2 (dQ):", pstrKey->pu8dQ, pstrKey->u16dQSize);
-                    K_DUMP("coefficient(QInv):", pstrKey->pu8QInv, pstrKey->u16QInvSize);
-                    M2M_PRINT("\n\n");
+                    if (verbose) {
+                        printf("\n- Private-Key Details:\n\n");
+                        printf("  Private-Key: (%u bits)\n", pstrKey->u16NSize * 8);
+                        K_DUMP("  modulus (N):", pstrKey->pu8N, pstrKey->u16NSize);
+                        K_DUMP("  publicExponent (e):", pstrKey->pu8e, pstrKey->u16eSize);
+                        K_DUMP("  privateExponent (d):", pstrKey->pu8d, pstrKey->u16dSize);
+                        K_DUMP("  prim1 (p):", pstrKey->pu8p, pstrKey->u16PSize);
+                        K_DUMP("  prime2 (q):", pstrKey->pu8q, pstrKey->u16QSize);
+                        K_DUMP("  exponent1 (dP):", pstrKey->pu8dP, pstrKey->u16dPSize);
+                        K_DUMP("  exponent2 (dQ):", pstrKey->pu8dQ, pstrKey->u16dQSize);
+                        K_DUMP("  coefficient(QInv):", pstrKey->pu8QInv, pstrKey->u16QInvSize);
+                        M2M_PRINT("\n\n");
+                    }
                 }
             }
             pstrCur = pstrCur->pstrNext;
@@ -677,6 +678,7 @@ sint8 TlsSrvSecReadInit(uint8 *pu8TlsSrvSec) {
     if (pu8TlsSrvSec != NULL) {
         uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
+        // Confirm the TLS Store's magic header
         gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)pu8TlsSrvSec;
         if (!memcmp(pu8TlsSrvSec, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
             gpstrRsaChain = TlsLoadCertChain((char *)TLS_SRV_RSA_CHAIN_FILE);
@@ -723,7 +725,7 @@ sint8 TlsSrvSecReadDeinit(void) {
 }
 
 /**************************************************************/
-sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKey, uint8 bDumpWholeChain, uint8 bListFiles, uint8 bWriteToFile, const char *pcOutPath) {
+sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKey, uint8 bDumpWholeChain, uint8 bListFiles, const char *pcOutPath, int verbose) {
     sint8 ret = M2M_ERR_FAIL;
     uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
@@ -731,13 +733,19 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
         tstrTlsSrvSecReadEntry *pstrCur;
 
         if (!memcmp(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
+
+            printf("- Found %i entries...\n\n", gpstrTlsSrvSecHdr->u32nEntries);
+
             /* DIR Command */
             if (bListFiles) {
+                printf("  %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
+
                 if ((gpstrRsaChain != NULL) && (bDumpRsa)) {
                     M2M_PRINT("<RSA CERTIFICATE CHAIN FILE LIST>\n\n");
                     pstrCur = gpstrRsaChain;
+                    tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
                     while (pstrCur != NULL) {
-                        printf("%-*s %*lu %-12s %s\n",
+                        printf("  %-*s %*lu %-12s %s\n",
                                TLS_SRV_SEC_FILE_NAME_MAX,
                                pstrCur->au8FileName, 4, pstrCur->u32FileSz,
                                pstrCur->bIsCert ? "CERTIFICATE" : "PRIVATE KEY",
@@ -751,7 +759,7 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
                     M2M_PRINT("<ECDSA CERTIFICATE CHAIN FILE LIST>\n\n");
                     pstrCur = gpstrECDSAChain;
                     while (pstrCur != NULL) {
-                        M2M_PRINT("%-*s %*lu %-12s %s\n",
+                        printf("  %-*s %*lu %-12s %s\n",
                                   TLS_SRV_SEC_FILE_NAME_MAX,
                                   pstrCur->au8FileName, 4, pstrCur->u32FileSz,
                                   pstrCur->bIsCert ? "CERTIFICATE" : "PRIVATE KEY",
@@ -763,11 +771,11 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
             }
 
             if (bDumpRsa) {
-                ret = TlsSrvDumpChain(gpstrRsaChain, bPrintPrivKey, bWriteToFile, bDumpWholeChain, (char *)"RSA_", pcOutPath);
+                ret = TlsSrvDumpChain(gpstrRsaChain, bPrintPrivKey, bDumpWholeChain, (char *)"RSA_", pcOutPath, verbose);
             }
 
             if (bDumpEcdsa) {
-                ret = TlsSrvDumpChain(gpstrECDSAChain, 0, bWriteToFile, bDumpWholeChain, (char *)"ECDSA_", pcOutPath);
+                ret = TlsSrvDumpChain(gpstrECDSAChain, 0, bDumpWholeChain, (char *)"ECDSA_", pcOutPath, verbose);
             }
         }
     }

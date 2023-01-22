@@ -111,7 +111,7 @@ static sint8 TlsCertStoreLoadFromFwImage(const char *pcFwFile) {
         fclose(fp);
         s8Ret = M2M_SUCCESS;
     } else {
-        printf("(ERR)Cannot Open Fw image <%s>\n", pcFwFile);
+        printf("* Error opening firmware file: <%s>\n", pcFwFile);
     }
     return s8Ret;
 }
@@ -199,21 +199,21 @@ static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFil
 READ COMMAND
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-int HandleReadCmd(const char *fwImg, const char *outfile) {
+int HandleReadCmd(const char *fwImg, const char *outfile, int verbose) {
     int ret = M2M_ERR_FAIL;
 
-    printf("Parsing TLS Store Contents\n");
-
-    // Dump TLS Store contents
-    ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL);
-    if (ret != M2M_SUCCESS) {
+    printf("Dumping TLS Store contents...\n");
+    if((ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS)) {
         return ret;
     }
+    printf("- TLS Store loaded...\n");
 
+    printf("- Parsing TLS Store...\n");
     TlsSrvSecReadInit(gau8TlsSrvSec);
-    TlsSrvSecDumpContents(1, 1, 1, 1, 1, 1, outfile);
 
-    printf("Parsing Root Cert Store Contents\n");
+    TlsSrvSecDumpContents(1, 1, 1, 1, 1, outfile, verbose);
+
+    printf("\nDumping Root Cert Store contents...\n");
 
     // Dump Root Cert Store Contents
     ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
@@ -282,7 +282,7 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
     return ret;
 }
 
-int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase) {
+int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase, int verbose) {
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
@@ -330,14 +330,17 @@ MAIN
 #define REG_ICASE (REG_EXTENDED << 1)
 
 int main(int argc, char **argv) {
+	// Read Command Setup
     struct arg_rex *read_cmd = arg_rex1(NULL, NULL, "read", NULL, REG_ICASE, NULL);
     struct arg_file *infiles1 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile1 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
+    struct arg_lit *verbose1  = arg_lit0("v", "verbose", "Output more details");
     struct arg_lit *help1 = arg_lit0("h", "help", "Show help");
     struct arg_end *end1 = arg_end(20);
-    void *argtable1[] = {read_cmd, infiles1, outfile1, help1, end1};
+    void *argtable1[] = {read_cmd, infiles1, outfile1, verbose1, help1, end1};
     int nerrors1;
 
+	// Update Command Setup
     struct arg_rex *update_cmd = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
     struct arg_file *infiles2 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile2 = arg_file0("o", NULL, "<output>", "output file (default is \"-\")");
@@ -346,11 +349,13 @@ int main(int argc, char **argv) {
     struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
     struct arg_file *ca_dir = arg_file0(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
     struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
+    struct arg_lit *verbose2  = arg_lit0("v", "verbose", "Output more details");
     struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
     struct arg_end *end2 = arg_end(20);
-    void *argtable2[] = {update_cmd, infiles2, outfile2, key, cert, pf_bin, ca_dir, erase, help2, end2};
+    void *argtable2[] = {update_cmd, infiles2, outfile2, key, cert, pf_bin, ca_dir, erase, verbose2, help2, end2};
     int nerrors2;
 
+	// Erase Command Setup
     struct arg_rex *erase_cmd = arg_rex1(NULL, NULL, "erase", NULL, REG_ICASE, NULL);
     struct arg_file *infiles3 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile3 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
@@ -378,9 +383,9 @@ int main(int argc, char **argv) {
     nerrors3 = arg_parse(argc, argv, argtable3);
 
     if (nerrors1 == 0) {
-        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0]);
+        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count);
     } else if (nerrors2 == 0) {
-        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count);
+        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose2->count);
     } else if (nerrors3 == 0) {
         exitcode = HandleEraseCmd(infiles3->filename[0], erase_all->count);
     } else {

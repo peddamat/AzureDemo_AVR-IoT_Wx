@@ -166,7 +166,7 @@ do														\
 	printf("\r\n");									\
 }while(0)
 
-#define TLS_LOG(...)					do{printf(__VA_ARGS__);printf("\r");}while(0)
+#define TLS_LOG(...)					do{printf("  "); printf(__VA_ARGS__);}while(0)
 #define TLS_ERR							TLS_LOG
 #define TLS_INFO						TLS_LOG
 

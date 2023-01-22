@@ -51,6 +51,16 @@ INCLUDES
     format of the content.
 */
 
+#define K_DUMP(name, Buffer, size)   \
+    do {                             \
+        int k;                       \
+        uint8 *buf = Buffer;         \
+        printf("%s", name);          \
+        for (k = 0; k < size; k++) { \
+            printf("%02X ", buf[k]); \
+        }                            \
+    } while (0)
+
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 DATA TYPES
@@ -439,7 +449,6 @@ sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, const char *pcFwFile, ui
 	return ret;
 }
 
-
 int DumpRootCerts(void)
 {
     uint32                  u32Idx;
@@ -461,7 +470,7 @@ int DumpRootCerts(void)
         u32nStoredCerts = pstrRootFlashHdr->u32nCerts;
         bIncrement = 1;
 
-		printf("Root Cert Store contains %i entries!\r\n", u32nStoredCerts);
+		printf("- Found %i entries!\r\n", u32nStoredCerts);
 
         for(u32Idx = 0 ; u32Idx < u32nStoredCerts ; u32Idx ++)
         {
@@ -470,23 +479,27 @@ int DumpRootCerts(void)
 
             if (pstrEntryHdr->strPubKey.u32PubKeyType == 1)
             {
-                printf("\r\nCertificate %i (RSA): ", u32Idx + 1);
+                printf("\n  Certificate %i: RSA", u32Idx + 1);
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
-                printf("\r\nCertificate %i (ECDSA): ", u32Idx + 1);
+                printf("\n  Certificate %i: ECDSA", u32Idx + 1);
             }
             else
             {
-                printf("\r\nCertificate %i (UNKNOWN TYPE!): ", u32Idx + 1);
+                printf("\n  Certificate %i: UNKNOWN!", u32Idx + 1);
             }
 
-            for (int i = 0; i < CRYPTO_SHA1_DIGEST_SIZE; i++)
-            {
-                printf("%i ", pstrEntryHdr->au8SHA1NameHash[i]);
-            }
-            printf("\r\nStart Date: %i-%i-%i\r\n", pstrEntryHdr->strStartDate.u8Day, pstrEntryHdr->strStartDate.u8Month, pstrEntryHdr->strStartDate.u16Year);
-            printf("End Date: %i-%i-%i\r\n", pstrEntryHdr->strExpDate.u8Day, pstrEntryHdr->strExpDate.u8Month, pstrEntryHdr->strExpDate.u16Year);
+            K_DUMP("\n  Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
+            // for (int i = 0; i < CRYPTO_SHA1_DIGEST_SIZE; i++)
+            // {
+                // printf("%i ", pstrEntryHdr->au8SHA1NameHash[i]);
+            // }
+            printf("\n  <%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
+                pstrEntryHdr->strStartDate.u16Year, pstrEntryHdr->strStartDate.u8Month, pstrEntryHdr->strStartDate.u8Day, \
+				pstrEntryHdr->strStartDate.u8Hour, pstrEntryHdr->strStartDate.u8Minute, pstrEntryHdr->strStartDate.u8Second, \
+                pstrEntryHdr->strExpDate.u16Year, pstrEntryHdr->strExpDate.u8Month, pstrEntryHdr->strExpDate.u8Day, \
+				pstrEntryHdr->strExpDate.u8Hour, pstrEntryHdr->strExpDate.u8Minute, pstrEntryHdr->strExpDate.u8Second);
 
             u16Offset += sizeof(tstrRootCertEntryHeader);
             u16Offset += (pstrKey->u32PubKeyType == ROOT_CERT_PUBKEY_RSA) ?

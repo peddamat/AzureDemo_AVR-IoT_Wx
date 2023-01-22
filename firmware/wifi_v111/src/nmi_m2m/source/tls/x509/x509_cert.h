@@ -1,5 +1,5 @@
 /*!
-@file       		
+@file
 	x509_cert.h
 
 @brief	X.509 certificate module
@@ -99,7 +99,7 @@ typedef struct{
 /*!
 @typedef	\
 	tpfMemPoolAllocFn
-	
+
 */
 typedef void* (*tpfMemPoolAllocFn)(void *pvHdl, uint32 u32AllocSz);
 
@@ -125,7 +125,7 @@ typedef struct{
 typedef struct{
 	uint8				u8Version;
 	/*!<
-		X509 version. 
+		X509 version.
 	*/
 	tenuTlsSignAlg		enuSignAlg;
 	/*!<
@@ -135,11 +135,11 @@ typedef struct{
 	*/
 	uint8				u8SerialNumberLength;
 	/*!<
-		X509 certificate serial number Length in bytes. 
+		X509 certificate serial number Length in bytes.
 	*/
 	uint8				au8SerialNo[X509_SERIAL_NO_MAX_SZ];
 	/*!<
-		X509 certificate serial number. 
+		X509 certificate serial number.
 	*/
 	tstrX520Name		strIssuer;
 	/*!<

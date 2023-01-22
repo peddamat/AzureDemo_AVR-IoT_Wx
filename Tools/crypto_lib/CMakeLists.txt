@@ -1,4 +1,6 @@
 cmake_minimum_required (VERSION 3.8)
+add_compile_options(-DCONF_WINC_USE_UART -g2)
+set(CMAKE_BUILD_TYPE Debug)
 
 project(CryptoLib)
 
