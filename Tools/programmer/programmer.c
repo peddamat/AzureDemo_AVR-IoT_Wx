@@ -6,11 +6,16 @@
 *  @version		1.0
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 //#include "../efuse/efuse.h"
 #include "programmer.h"
 #include "spi_flash/include/spi_flash.h"
 #include "firmware_addresses.h"
 #include "driver/source/nmuart.h"
+
+#define DWORD int
 
 #define UART_HIGH_RATE  (500000UL)
 #define UART_LOW_RATE	(115200UL)

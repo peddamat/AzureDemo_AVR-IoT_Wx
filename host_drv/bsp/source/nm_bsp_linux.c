@@ -5,11 +5,10 @@
 *  @date		10 JULY 2012
 *  @version		1.0
 */
-#ifdef WIN32
 #include "bsp/include/nm_bsp.h"
 #include "bsp/include/nm_bsp_internal.h"
+#include "bsp/include/nm_bsp_linux.h"
 #include "common/include/nm_common.h"
-#include "windows.h"
 
 tpfNmBspIsr gpfIsr = NULL;
 /**
@@ -36,7 +35,7 @@ sint8 nm_bsp_init(void)
 */
 void nm_bsp_sleep(uint32 u32TimeMsec)
 {
-	Sleep(u32TimeMsec);
+	// Sleep(u32TimeMsec);
 }
 
 /*
@@ -135,6 +134,6 @@ void nm_bsp_interrupt_ctrl(uint8 u8Enable)
 
 uint32 nm_bsp_get_tick()
 {
-	return (uint32)GetTickCount();
+        return 10;
+        // return (uint32)GetTickCount();
 }
-#endif

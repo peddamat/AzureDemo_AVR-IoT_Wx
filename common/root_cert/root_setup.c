@@ -208,6 +208,8 @@ int InitializeMemory(void) {
     pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);
     pstrRootFlashHdr->u32nCerts = 0;
     m2m_memcpy(pstrRootFlashHdr->au8StartPattern, au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH);
+
+    return 0;
 }
 
 /************************************************/
@@ -388,7 +390,7 @@ static sint8 RootCertStoreSaveToFlash(uint8 *pu8RootCertFlashSecContent, uint8 u
 	return s8Ret;
 }
 
-static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, char *pcFwFile)
+static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, const char *pcFwFile)
 {
 	FILE	*fp;
 	sint8	s8Ret	= M2M_ERR_FAIL;

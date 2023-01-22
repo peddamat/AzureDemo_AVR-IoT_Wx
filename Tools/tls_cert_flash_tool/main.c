@@ -49,7 +49,7 @@ INCLUDES
 
 #include "../common/argtable/argtable3.h"
 #include "crypto_lib_api.h"
-#include "driver\include\m2m_types.h"
+#include "driver/include/m2m_types.h"
 #include "programmer.h"
 #include "root_setup.h"
 #include "tls_srv_sec.h"
@@ -288,6 +288,8 @@ int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, con
 
     // ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
+
+    return ret;
 }
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*

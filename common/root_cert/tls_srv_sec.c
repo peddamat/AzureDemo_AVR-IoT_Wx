@@ -45,6 +45,7 @@ INCLUDES
 
 #include "tls_srv_sec.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "crypto_lib_api.h"
