@@ -56,9 +56,7 @@ INCLUDES
         uint8 *buf = Buffer;         \
         printf("%s", name);          \
         for (k = 0; k < size; k++) { \
-            if (!(k % 16))           \
-                printf("\r\n\t");    \
-            printf("%02X ", buf[k]); \
+            printf("%02X", buf[k]); \
         }                            \
         printf("\r\n");              \
     } while (0)
@@ -651,15 +649,35 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
             } else {
                 if (bPrintPrivKey) {
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
-                    M2M_PRINT("Private-Key: (%u bit)\n", pstrKey->u16NSize * 8);
-                    K_DUMP("modulus (N):", pstrKey->pu8N, pstrKey->u16NSize);
-                    K_DUMP("publicExponent (e):", pstrKey->pu8e, pstrKey->u16eSize);
-                    K_DUMP("privateExponent (d):", pstrKey->pu8d, pstrKey->u16dSize);
-                    K_DUMP("prim1 (p):", pstrKey->pu8p, pstrKey->u16PSize);
-                    K_DUMP("prime2 (q):", pstrKey->pu8q, pstrKey->u16QSize);
-                    K_DUMP("exponent1 (dP):", pstrKey->pu8dP, pstrKey->u16dPSize);
-                    K_DUMP("exponent2 (dQ):", pstrKey->pu8dQ, pstrKey->u16dQSize);
-                    K_DUMP("coefficient(QInv):", pstrKey->pu8QInv, pstrKey->u16QInvSize);
+                    printf("asn1=SEQUENCE:private_key");
+                    printf("[private_key]");
+                    printf("version=INTEGER:0");
+                    printf("\n");
+                    K_DUMP("n=INTEGER:0x", pstrKey->pu8N, pstrKey->u16NSize);
+                    printf("\n");
+                    K_DUMP("e=INTEGER:0x", pstrKey->pu8e, pstrKey->u16eSize);
+                    printf("\n");
+                    K_DUMP("d=INTEGER:0x", pstrKey->pu8d, pstrKey->u16dSize);
+                    printf("\n");
+                    K_DUMP("p=INTEGER:0x", pstrKey->pu8p, pstrKey->u16PSize);
+                    printf("\n");
+                    K_DUMP("q=INTEGER:0x", pstrKey->pu8q, pstrKey->u16QSize);
+                    printf("\n");
+                    K_DUMP("exp1=INTEGER:0x", pstrKey->pu8dP, pstrKey->u16dPSize);
+                    printf("\n");
+                    K_DUMP("exp2=INTEGER:0x", pstrKey->pu8dQ, pstrKey->u16dQSize);
+                    printf("\n");
+                    K_DUMP("coeff=INTEGER:0x", pstrKey->pu8QInv, pstrKey->u16QInvSize);
+
+                    // M2M_PRINT("Private-Key: (%u bit)\n", pstrKey->u16NSize * 8);
+                    // K_DUMP("modulus (N):", pstrKey->pu8N, pstrKey->u16NSize);
+                    // K_DUMP("publicExponent (e):", pstrKey->pu8e, pstrKey->u16eSize);
+                    // K_DUMP("privateExponent (d):", pstrKey->pu8d, pstrKey->u16dSize);
+                    // K_DUMP("prim1 (p):", pstrKey->pu8p, pstrKey->u16PSize);
+                    // K_DUMP("prime2 (q):", pstrKey->pu8q, pstrKey->u16QSize);
+                    // K_DUMP("exponent1 (dP):", pstrKey->pu8dP, pstrKey->u16dPSize);
+                    // K_DUMP("exponent2 (dQ):", pstrKey->pu8dQ, pstrKey->u16dQSize);
+                    // K_DUMP("coefficient(QInv):", pstrKey->pu8QInv, pstrKey->u16QInvSize);
                     M2M_PRINT("\n\n");
                 }
             }
