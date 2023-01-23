@@ -51,6 +51,21 @@ INCLUDES
 #include "crypto_lib_api.h"
 #include "pem.h"
 
+#define M2M_DUMP_BUF(name,Buffer,size)					\
+do														\
+{														\
+	int k;												\
+	uint8	*buf = Buffer;								\
+	printf("%s(%08X)(%u)",name,(uint32)buf, size);	\
+	for (k = 0; k < size; k++)							\
+	{													\
+		if (!(k % 16))									\
+		printf("\r\n\t");								\
+		printf("%02X ", buf[k]);						\
+	}													\
+	printf("\r\n");									\
+}while(0)
+
 #define K_DUMP(name, Buffer, size)   \
     do {                             \
         int k;                       \
@@ -61,6 +76,28 @@ INCLUDES
         }                            \
         printf("\r\n");              \
     } while (0)
+
+void writeHexString(const char *filename, const char *name, uint8 *Buffer, int size) {
+	FILE *fp;
+    int k;
+    uint8 *buf = Buffer;
+
+    fp = fopen(filename,"a+");
+    if(fp != NULL)
+    {
+        fprintf(fp, "%s", name);
+        for (k = 0; k < size; k++) {
+            fprintf(fp, "%02X", buf[k]);
+        }
+        fprintf(fp, "\r\n");
+
+        fclose(fp);
+    }
+}
+
+void writePrivKey(const char *name, uint8 *Buffer, int size) {
+    writeHexString("private.asn1", name, Buffer, size);
+}
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 DATA TYPES
@@ -192,7 +229,7 @@ static sint8 ReadServerX509Chain(tstrBuff *pstrX509Chain, uint8 u8nCerts, tstrX5
     uint8 bIsIssuerFound;
 
     for (u8Idx = 0; u8Idx < u8nCerts; u8Idx++) {
-        if (CryptoX509CertDecode(pstrX509Chain[u8Idx].pu8Data, pstrX509Chain[u8Idx].u16BufferSize, &strX509, 0) == M2M_SUCCESS) {
+        if (CryptoX509CertDecode(pstrX509Chain[u8Idx].pu8Data, pstrX509Chain[u8Idx].u16BufferSize, &strX509, 0, 0) == M2M_SUCCESS) {
             tstrX509Entry *pstrNewX509 = (tstrX509Entry *)malloc(sizeof(tstrX509Entry));
             if (pstrNewX509 != NULL) {
                 memcpy((uint8 *)&pstrNewX509->strX509, (uint8 *)&strX509, sizeof(txtrX509CertInfo));
@@ -526,7 +563,7 @@ static sint8 TlsSrvSecAddReadEntry(uint8 *pu8FileName, tstrTlsSrvSecReadEntry **
         if (ret == M2M_SUCCESS) {
             memcpy(pstrNewEntry->au8FileName, pu8FileName, TLS_SRV_SEC_FILE_NAME_MAX);
             if (!memcmp(pu8FileName, "CERT", 4)) {
-                CryptoX509CertDecode(pstrNewEntry->pu8FileContent, (uint16)pstrNewEntry->u32FileSz, &pstrNewEntry->strX509, 0);
+                CryptoX509CertDecode(pstrNewEntry->pu8FileContent, (uint16)pstrNewEntry->u32FileSz, &pstrNewEntry->strX509, 0, 0);
                 pstrNewEntry->bIsCert = 1;
                 pstrNewEntry->pu8CmnName = pstrNewEntry->strX509.strSubject.acCmnName;
             } else {
@@ -635,11 +672,11 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
                         break;
                     }
                 } else {
-                    if (CryptoX509CertDecode(pstrCur->pu8FileContent, (uint16)pstrCur->u32FileSz, &pstrCur->strX509, verbose) != M2M_SUCCESS) {
+                    if (CryptoX509CertDecode(pstrCur->pu8FileContent, (uint16)pstrCur->u32FileSz, &pstrCur->strX509, 1, verbose) != M2M_SUCCESS) {
                         ret = M2M_ERR_FAIL;
                         break;
                     }
-                    M2M_PRINT("\n\n");
+                    // M2M_PRINT("\n\n");
                 }
 
                 if (!bDumpWholeChain) {
@@ -648,36 +685,37 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
             } else {
                 if (bPrintPrivKey) {
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
-                    printf("asn1=SEQUENCE:private_key");
-                    printf("[private_key]");
-                    printf("version=INTEGER:0");
-                    printf("\n");
-                    K_DUMP("n=INTEGER:0x", pstrKey->pu8N, pstrKey->u16NSize);
-                    printf("\n");
-                    K_DUMP("e=INTEGER:0x", pstrKey->pu8e, pstrKey->u16eSize);
-                    printf("\n");
-                    K_DUMP("d=INTEGER:0x", pstrKey->pu8d, pstrKey->u16dSize);
-                    printf("\n");
-                    K_DUMP("p=INTEGER:0x", pstrKey->pu8p, pstrKey->u16PSize);
-                    printf("\n");
-                    K_DUMP("q=INTEGER:0x", pstrKey->pu8q, pstrKey->u16QSize);
-                    printf("\n");
-                    K_DUMP("exp1=INTEGER:0x", pstrKey->pu8dP, pstrKey->u16dPSize);
-                    printf("\n");
-                    K_DUMP("exp2=INTEGER:0x", pstrKey->pu8dQ, pstrKey->u16dQSize);
-                    printf("\n");
-                    K_DUMP("coeff=INTEGER:0x", pstrKey->pu8QInv, pstrKey->u16QInvSize);
 
-                    // M2M_PRINT("Private-Key: (%u bit)\n", pstrKey->u16NSize * 8);
-                    // K_DUMP("modulus (N):", pstrKey->pu8N, pstrKey->u16NSize);
-                    // K_DUMP("publicExponent (e):", pstrKey->pu8e, pstrKey->u16eSize);
-                    // K_DUMP("privateExponent (d):", pstrKey->pu8d, pstrKey->u16dSize);
-                    // K_DUMP("prim1 (p):", pstrKey->pu8p, pstrKey->u16PSize);
-                    // K_DUMP("prime2 (q):", pstrKey->pu8q, pstrKey->u16QSize);
-                    // K_DUMP("exponent1 (dP):", pstrKey->pu8dP, pstrKey->u16dPSize);
-                    // K_DUMP("exponent2 (dQ):", pstrKey->pu8dQ, pstrKey->u16dQSize);
-                    // K_DUMP("coefficient(QInv):", pstrKey->pu8QInv, pstrKey->u16QInvSize);
-                    M2M_PRINT("\n\n");
+                    if (strcmp(pcOutPath, "") != 0) {
+                        writeHexString("private.sh", "openssl asn1parse -genconf private.asn1 -out private.der -noout", NULL, 0);
+                        writeHexString("private.sh", "openssl rsa -in private.der -inform der -out private.pem", NULL, 0);
+                        writeHexString("private.sh", "openssl rsa -in private.pem -text -noout", NULL, 0);
+                        writePrivKey("asn1=SEQUENCE:private_key", NULL, 0);
+                        writePrivKey("[private_key]", NULL, 0);
+                        writePrivKey("version=INTEGER:0", NULL, 0);
+                        writePrivKey("n=INTEGER:0x", pstrKey->pu8N, pstrKey->u16NSize);
+                        writePrivKey("e=INTEGER:0x", pstrKey->pu8e, pstrKey->u16eSize);
+                        writePrivKey("d=INTEGER:0x", pstrKey->pu8d, pstrKey->u16dSize);
+                        writePrivKey("p=INTEGER:0x", pstrKey->pu8p, pstrKey->u16PSize);
+                        writePrivKey("q=INTEGER:0x", pstrKey->pu8q, pstrKey->u16QSize);
+                        writePrivKey("exp1=INTEGER:0x", pstrKey->pu8dP, pstrKey->u16dPSize);
+                        writePrivKey("exp2=INTEGER:0x", pstrKey->pu8dQ, pstrKey->u16dQSize);
+                        writePrivKey("coeff=INTEGER:0x", pstrKey->pu8QInv, pstrKey->u16QInvSize);
+                    }
+
+                    printf("- Private Key Details:\n");
+                    M2M_PRINT("  Size: (%u bit)\n", pstrKey->u16NSize * 8);
+                    M2M_DUMP_BUF("  Modulus (N) :", pstrKey->pu8N, pstrKey->u16NSize);
+                    if (verbose) {
+                        M2M_DUMP_BUF("  PublicExponent (e) :", pstrKey->pu8e, pstrKey->u16eSize);
+                        M2M_DUMP_BUF("  PrivateExponent (d) :", pstrKey->pu8d, pstrKey->u16dSize);
+                        M2M_DUMP_BUF("  Prime1 (p): ", pstrKey->pu8p, pstrKey->u16PSize);
+                        M2M_DUMP_BUF("  Prime2 (q): ", pstrKey->pu8q, pstrKey->u16QSize);
+                        M2M_DUMP_BUF("  Exponent1 (dP): ", pstrKey->pu8dP, pstrKey->u16dPSize);
+                        M2M_DUMP_BUF("  Exponent2 (dQ): ", pstrKey->pu8dQ, pstrKey->u16dQSize);
+                        M2M_DUMP_BUF("  Coefficient (QInv): ", pstrKey->pu8QInv, pstrKey->u16QInvSize);
+                    }
+                    M2M_PRINT("\n");
                 }
             }
             pstrCur = pstrCur->pstrNext;
@@ -753,35 +791,38 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
 
             /* DIR Command */
             if (bListFiles) {
-                printf("  %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
 
                 if ((gpstrRsaChain != NULL) && (bDumpRsa)) {
-                    M2M_PRINT("<RSA CERTIFICATE CHAIN FILE LIST>\n\n");
+                    // M2M_PRINT("<RSA CERTIFICATE CHAIN FILE LIST>\n\n");
+                    printf("  RSA Certificate Chain File List\n");
+                    printf("    %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
                     pstrCur = gpstrRsaChain;
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
                     while (pstrCur != NULL) {
-                        printf("  %-*s %*lu %-12s %s\n",
+                        printf("    %-*s %*lu %-12s %s\n",
                                TLS_SRV_SEC_FILE_NAME_MAX,
                                pstrCur->au8FileName, 4, pstrCur->u32FileSz,
                                pstrCur->bIsCert ? "CERTIFICATE" : "PRIVATE KEY",
                                ((pstrCur->pu8CmnName != NULL) ? (char *)pstrCur->pu8CmnName : (char *)" "));
                         pstrCur = pstrCur->pstrNext;
                     }
-                    M2M_PRINT("\n\n");
+                    printf("\n");
                 }
 
                 if ((gpstrECDSAChain != NULL) && (bDumpEcdsa)) {
-                    M2M_PRINT("<ECDSA CERTIFICATE CHAIN FILE LIST>\n\n");
+                    // M2M_PRINT("<ECDSA CERTIFICATE CHAIN FILE LIST>\n\n");
+                    printf("  ECDSA Certificate Chain File List\n");
+                    printf("    %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
                     pstrCur = gpstrECDSAChain;
                     while (pstrCur != NULL) {
-                        printf("  %-*s %*lu %-12s %s\n",
+                        printf("    %-*s %*lu %-12s %s\n",
                                   TLS_SRV_SEC_FILE_NAME_MAX,
                                   pstrCur->au8FileName, 4, pstrCur->u32FileSz,
                                   pstrCur->bIsCert ? "CERTIFICATE" : "PRIVATE KEY",
                                   (pstrCur->pu8CmnName != NULL) ? (char *)pstrCur->pu8CmnName : (char *)" ");
                         pstrCur = pstrCur->pstrNext;
                     }
-                    M2M_PRINT("\n\n");
+                    printf("\n");
                 }
             }
 

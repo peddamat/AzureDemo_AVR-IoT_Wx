@@ -67,6 +67,7 @@
     <OutDir>..\$(Configuration)\</OutDir>
     <IntDir>..\$(Configuration)\Interm\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>..\..\common\tinyheaders\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -151,6 +152,7 @@
     <ClInclude Include="..\..\..\common\root_cert\pem.h" />
     <ClInclude Include="..\..\..\common\root_cert\root_setup.h" />
     <ClInclude Include="..\..\..\common\root_cert\tls_srv_sec.h" />
+    <ClInclude Include="..\tinyfiles.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\root_certificate_downloader\root_certificate_downloader.vcxproj">

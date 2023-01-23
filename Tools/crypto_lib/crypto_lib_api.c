@@ -36,7 +36,7 @@ void* CryptoInternalMalloc(void *hdl, uint32 u32AllocSz)
 }
 
 /**************************************************************/
-sint8 CryptoRSASignVerify(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpE, uint16 u16RsaExpLen, 
+sint8 CryptoRSASignVerify(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpE, uint16 u16RsaExpLen,
 						  uint8	*pu8Signature, uint16 u16SignLen, uint8	*pu8SignedMsgHash, uint16 u16HashLength)
 {
 	tstrRSAPublicKey	strRsaPub;
@@ -50,7 +50,7 @@ sint8 CryptoRSASignVerify(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 
 }
 
 /**************************************************************/
-sint8 CryptoRSASignGen(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpd, uint16 u16RsaExpLen, 
+sint8 CryptoRSASignGen(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpd, uint16 u16RsaExpLen,
 						  uint8	*pu8Signature, uint8 *pu8SignedMsgHash, uint16 u16HashLength)
 {
 	tstrRSAPublicKey	strRsaPub;
@@ -80,7 +80,7 @@ void CryptoSha256Hash(uint8 *pu8Data, uint32 u32DataSize, uint8 *pu8Digest)
 }
 
 /**************************************************************/
-sint8 CryptoX509CertDecode(uint8 *pu8X509CertBuf, uint16 u16X509CertBuffer, txtrX509CertInfo *pstrCert, uint8 bDumpCert)
+sint8 CryptoX509CertDecode(uint8 *pu8X509CertBuf, uint16 u16X509CertBuffer, txtrX509CertInfo *pstrCert, uint8 bDumpCert, int verbose)
 {
 	sint8			ret			= M2M_ERR_FAIL;
 	tstrMemPool		strPool;
@@ -94,7 +94,7 @@ sint8 CryptoX509CertDecode(uint8 *pu8X509CertBuf, uint16 u16X509CertBuffer, txtr
 	strPool.fpAlloc			= CryptoInternalMalloc;
 	strPool.pvPoolHandle	= pstrCert;
 	pstrCert->pvPrivate		= NULL;
-	if(X509Cert_Decode(&strX509Buff, u16X509CertBuffer, &strPool, &strX509Cer , bDumpCert) == X509_SUCCESS)
+	if(X509Cert_Decode(&strX509Buff, u16X509CertBuffer, &strPool, &strX509Cer , bDumpCert, verbose) == X509_SUCCESS)
 	{
 		pstrCert->u8SerialNumberLength	= strX509Cer.u8SerialNumberLength;
 		memcpy(pstrCert->au8SerialNo, strX509Cer.au8SerialNo, sizeof(strX509Cer.au8SerialNo));

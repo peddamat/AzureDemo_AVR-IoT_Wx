@@ -53,7 +53,7 @@ INCLUDES
 #include "tls_srv_sec.h"
 
 #define TINYFILES_IMPL
-#include "tinyfiles.h"
+#include "../tinyheaders/tinyfiles.h"
 
 /**************************************************************/
 int ReadFileToBuffer(const char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize) {

@@ -1302,7 +1302,8 @@ tstrTlsBuffer	*pstrX509Buffer,
 uint32 			u32CertSize,
 tstrMemPool	*pstrPool,
 tstrX509Cert 	*pstrCert,
-uint8			bDumpX509
+uint8			bDumpX509,
+int verbose
 )
 {
 /*
@@ -1370,7 +1371,7 @@ uint8			bDumpX509
 										s8Ret = Cert_ComputeTBSCertHash(pstrX509Buffer, &strTBSCert, u16TBSCertSize, pstrCert);
 									}
 									if(bDumpX509)
-										X509Cert_Dump(pstrCert);
+										X509Cert_Dump(pstrCert, verbose);
 								}
 							}
 						}
@@ -1544,113 +1545,107 @@ Version
 Date
 	7 March 2013
 *********************************************************************/
-TLS_CLIENT_API void X509Cert_Dump(tstrX509Cert *pstrCert)
+TLS_CLIENT_API void X509Cert_Dump(tstrX509Cert *pstrCert, int verbose)
 {
 	if(pstrCert != NULL)
 	{
-		TLS_LOG("\n- TLS Certificate Details:\n\n");
+		TLS_LOG("\n- TLS Certificate Details:\n");
 
-		// if (verbose)
-		// {
+		if (verbose)
+		{
 			uint32	i;
 
-			// TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
-			// TLS_LOG("     CERTIFICATE <%s>\n", pstrCert->strSubject.acCmnName);
-			// TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
-
-			TLS_LOG("VERSION                  %u\n",pstrCert->u8Version + 1);
-			TLS_LOG("SERIAL NO                ");
+			TLS_LOG("  VERSION                  %u\n",pstrCert->u8Version + 1);
+			TLS_LOG("  SERIAL NO                ");
 			for(i = 0 ; i < pstrCert->u8SerialNumberLength ; i++)
 			{
-				TLS_LOG("%02X ", pstrCert->au8SerialNo[i]);
+				TLS_LOG("  %02X ", pstrCert->au8SerialNo[i]);
 			}
-			TLS_LOG("\n");
+			TLS_LOG("  \n");
 
-			TLS_LOG("SIGNATURE ALGORITHM      ");
+			TLS_LOG("  SIGNATURE ALGORITHM      ");
 			if(pstrCert->enuSignAlg == TLS_SIG_ALG_RSA)
 			{
-				TLS_LOG("RSA");
+				TLS_LOG("  RSA");
 			}
 			else if(pstrCert->enuSignAlg == TLS_SIG_ALG_ECDSA)
 			{
-				TLS_LOG("ECDSA");
+				TLS_LOG("  ECDSA");
 			}
-			TLS_LOG("\n");
+			TLS_LOG("  \n");
 
-			TLS_LOG("HASH ALGORITHM           ");
+			TLS_LOG("  HASH ALGORITHM           ");
 			if(pstrCert->enuHashAlg == HASH_ALG_SHA1)
 			{
-				TLS_LOG("SHA1");
+				TLS_LOG("  SHA1");
 			}
 			else if(pstrCert->enuHashAlg == HASH_ALG_SHA224)
 			{
-				TLS_LOG("SHA224");
+				TLS_LOG("  SHA224");
 			}
 			else if(pstrCert->enuHashAlg == HASH_ALG_SHA256)
 			{
-				TLS_LOG("SHA256");
+				TLS_LOG("  SHA256");
 			}
 			else if(pstrCert->enuHashAlg == HASH_ALG_SHA1)
 			{
-				TLS_LOG("SHA384");
+				TLS_LOG("  SHA384");
 			}
 			else if(pstrCert->enuHashAlg == HASH_ALG_SHA512)
 			{
-				TLS_LOG("SHA512");
+				TLS_LOG("  SHA512");
 			}
-			TLS_LOG("\n");
+			TLS_LOG("  \n");
 
-			TLS_LOG("ISSUER                   ");
+			TLS_LOG("  ISSUER                   ");
 			if(strlen(pstrCert->strIssuer.acCmnName) != 0)
 			{
-				TLS_LOG("%s",pstrCert->strIssuer.acCmnName);
+				TLS_LOG("  %s",pstrCert->strIssuer.acCmnName);
 			}
-			TLS_LOG("\n");
+			TLS_LOG("  \n");
 
-			TLS_LOG("SUBJECT                  ");
+			TLS_LOG("  SUBJECT                  ");
 			if(strlen(pstrCert->strSubject.acCmnName) != 0)
 			{
-				TLS_LOG("%s",pstrCert->strSubject.acCmnName);
+				TLS_LOG("  %s",pstrCert->strSubject.acCmnName);
 			}
-			TLS_LOG("\n");
+			TLS_LOG("  \n");
 
-			TLS_LOG("Valid From               ");
-			TLS_LOG("%d-%02d-%02d %02d:%02d:%02d\n",
+			TLS_LOG("  Valid From               ");
+			TLS_LOG("  %d-%02d-%02d %02d:%02d:%02d\n",
 					pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day,
 					pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second);
 
-			TLS_LOG("Valid to                 ");
-			TLS_LOG("%d-%02d-%02d %02d:%02d:%02d\n",
+			TLS_LOG("  Valid to                 ");
+			TLS_LOG("  %d-%02d-%02d %02d:%02d:%02d\n",
 					pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day,
 					pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
 
-			TLS_LOG("\n");
+			TLS_LOG("  \n");
 			if(pstrCert->strPubKey.enuType == PUBKEY_ALG_RSA)
 			{
-				TLS_LOG("Public-Key: (RSA %u bits)\n", pstrCert->strPubKey.strRSAKey.u16NSize * 8);
-				M2M_DUMP_BUF("  Modulus ", pstrCert->strPubKey.strRSAKey.pu8N, pstrCert->strPubKey.strRSAKey.u16NSize);
-				M2M_DUMP_BUF("  Exponent ", pstrCert->strPubKey.strRSAKey.pu8E, pstrCert->strPubKey.strRSAKey.u16ESize);
+				TLS_LOG("  Public-Key: (RSA %u bits)\n", pstrCert->strPubKey.strRSAKey.u16NSize * 8);
+				M2M_DUMP_BUF("    Modulus ", pstrCert->strPubKey.strRSAKey.pu8N, pstrCert->strPubKey.strRSAKey.u16NSize);
+				M2M_DUMP_BUF("    Exponent ", pstrCert->strPubKey.strRSAKey.pu8E, pstrCert->strPubKey.strRSAKey.u16ESize);
 			}
 			else if(pstrCert->strPubKey.enuType == PUBKEY_ALG_ECC)
 			{
-				TLS_LOG("Public-Key\n\t");
-				M2M_DUMP_BUF("ECDSA", pstrCert->strPubKey.strEccKey.strQ.X, (pstrCert->strPubKey.strEccKey.strQ.u16Size * 2));
+				TLS_LOG("  Public-Key\n\t");
+				M2M_DUMP_BUF("    ECDSA", pstrCert->strPubKey.strEccKey.strQ.X, (pstrCert->strPubKey.strEccKey.strQ.u16Size * 2));
 			}
 
-			TLS_LOG("\n\n");
-			M2M_DUMP_BUF("  SIGNATURE", pstrCert->pu8Sig, pstrCert->u16SigSz);
-			// TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
-		// }
-		// else
-		// {
-		// 	// TLS_INFO("*=*=* X509 *=*=*\n");
-		// 	TLS_INFO("Subject <%s>\n", ((strlen(pstrCert->strSubject.acCmnName) != 0) ? pstrCert->strSubject.acCmnName	: " "));
-		// 	TLS_INFO("Issuer  <%s>\n",((strlen(pstrCert->strIssuer.acCmnName) != 0) ? pstrCert->strIssuer.acCmnName	: " "));
-		// 	TLS_INFO("<%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
-		// 			pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day, \
-		// 			pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second, \
-		// 			pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day, \
-		// 			pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
-		// }
+			M2M_DUMP_BUF("    SIGNATURE", pstrCert->pu8Sig, pstrCert->u16SigSz);
+		}
+		else
+		{
+			TLS_INFO("  Subject <%s>\n", ((strlen(pstrCert->strSubject.acCmnName) != 0) ? pstrCert->strSubject.acCmnName	: " "));
+			TLS_INFO("  Issuer  <%s>\n",((strlen(pstrCert->strIssuer.acCmnName) != 0) ? pstrCert->strIssuer.acCmnName	: " "));
+			TLS_INFO("  <%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
+					pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day, \
+					pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second, \
+					pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day, \
+					pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
+
+		}
 	}
 }

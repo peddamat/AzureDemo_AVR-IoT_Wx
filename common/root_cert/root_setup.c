@@ -136,7 +136,7 @@ static int GetRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, txtrX509
     ret = DecodeX509Certificate(pu8RootCert, u32RootCertSz, &pcRootCertDER, &u32FileSize);
     if(ret == M2M_SUCCESS)
     {
-        ret = CryptoX509CertDecode(pcRootCertDER, (uint16)u32FileSize, pstrX509, 0);
+        ret = CryptoX509CertDecode(pcRootCertDER, (uint16)u32FileSize, pstrX509, 0, 0);
         if(ret == M2M_SUCCESS)
         {
             printf("\r\n>>>Found Certificate:\n");

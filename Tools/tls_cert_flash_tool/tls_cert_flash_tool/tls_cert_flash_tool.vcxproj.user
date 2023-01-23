@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
-    <LocalDebuggerCommandArguments>update atwinc1500.bin --key=ioxy-certs\devices\d1\d1.key --cert=ioxy-certs\devices\d1\d1.pem --ca_dir=ioxy-certs\ca\rootCA.key</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>read</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>..\Debug_UART</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

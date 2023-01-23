@@ -140,13 +140,13 @@ typedef struct{
 FUNCTION PROTOTYPES
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-sint8 CryptoRSASignVerify(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpE, uint16 u16RsaExpLen, 
+sint8 CryptoRSASignVerify(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpE, uint16 u16RsaExpLen,
 						  uint8	*pu8Signature, uint16 u16SignLen, uint8	*pu8SignedMsgHash, uint16 u16HashLength);
 
-sint8 CryptoRSASignGen(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpd, uint16 u16RsaExpLen, 
+sint8 CryptoRSASignGen(uint8 *pu8RsaModulusN, uint16 u16RsaModulusLen, uint8 *pu8RsaExpd, uint16 u16RsaExpLen,
 						  uint8	*pu8Signature, uint8 *pu8SignedMsgHash, uint16 u16HashLength);
 
-sint8 CryptoX509CertDecode(uint8 *pu8X509CertBuf, uint16 u16X509CertBuffer, txtrX509CertInfo *pstrCert, uint8 bDumpCert);
+sint8 CryptoX509CertDecode(uint8 *pu8X509CertBuf, uint16 u16X509CertBuffer, txtrX509CertInfo *pstrCert, uint8 bDumpCert, int verbose);
 void CryptoX509DeleteContext(txtrX509CertInfo *pstrCert);
 sint8 CryptoDecodeRsaPrivKey(uint8 *pu8RsaKeyFile, uint32 u32KeySize, tstrASN1RSAPrivateKey *pstrRsaPrivKey);
 

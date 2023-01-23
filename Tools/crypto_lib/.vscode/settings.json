@@ -1,5 +1,6 @@
 {
     "files.associations": {
         "m2m_types.h": "c"
-    }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
