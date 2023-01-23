@@ -9,7 +9,7 @@
             "type": "gdb",
             "request": "launch",
             "target": "./TlsCertTool",
-            "arguments": "read m2m_aio_3a0.bin -o certs",
+            "arguments": "update m2m_aio_3a0.bin --ca_dir certs",
             "cwd": "${workspaceRoot}/Tools/tls_cert_flash_tool/build",
             "valuesFormatting": "parseText"
         }

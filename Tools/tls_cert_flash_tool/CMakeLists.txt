@@ -7,6 +7,7 @@ project(TlsCertTool)
 add_executable(TlsCertTool main.c
 ../../common/argtable/argtable3.c
 ../../common/simple_uart/simple_uart.c
+../../common/tinyheaders/tinyfiles.h
 ../../common/root_cert/pem.c
 ../../common/root_cert/root_setup.c
 ../../common/root_cert/tls_cert_store_win.c
@@ -57,6 +58,7 @@ target_link_libraries(TlsCertTool CryptoLib)
 
 include_directories("../crypto_lib/include")
 include_directories("../../common/simple_uart")
+include_directories("../../common/tinyheaders")
 include_directories("../../common/spi_flash_mapping")
 include_directories("../../common/root_cert")
 include_directories("../../host_drv")

@@ -286,7 +286,7 @@ int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, con
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
-    // ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
+    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
 
     return ret;

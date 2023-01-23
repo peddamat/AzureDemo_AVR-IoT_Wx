@@ -52,10 +52,11 @@ INCLUDES
 #include "programmer.h"
 #include "tls_srv_sec.h"
 
+#define TINYFILES_IMPL
+#include "tinyfiles.h"
+
 /**************************************************************/
 int ReadFileToBuffer(const char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize) {
-    return 0;
-#ifdef WIN32
     FILE *fp;
     int ret = M2M_ERR_FAIL;
 
@@ -78,12 +79,57 @@ int ReadFileToBuffer(const char *pcFileName, uint8 **ppu8FileData, uint32 *pu32F
         fclose(fp);
     }
     return ret;
-#endif
 }
 
 /**************************************************************/
 void ListDirectoryContents(const char *pcDir, char *pcExt, char ***ppacFileList, uint32 *pu32ListSize) {
-#ifdef WIN32
+#ifdef POSIX
+    uint32 u32ListSize = 0;
+    char **pacFileList = NULL;
+    uint32 u32CertNamesListMaxSz = 0;
+    char acPath[2048];
+
+	tfDIR dir;
+	tfDirOpen( &dir, pcDir );
+
+    int i = 0;
+	while ( dir.has_next )
+	{
+		tfFILE file;
+		tfReadFile( &dir, &file );
+        if (strcmp(file.ext, pcExt) == 0){
+            sprintf(acPath, "%s", file.path);
+            size_t u32PathLen;
+
+            if (u32CertNamesListMaxSz <= u32ListSize) {
+                if (u32CertNamesListMaxSz > 0 && u32CertNamesListMaxSz < (1ul << 31)) {
+                    u32CertNamesListMaxSz <<= 1;
+                } else {
+                    u32CertNamesListMaxSz = 1;
+                }
+                pacFileList = (char **)realloc(pacFileList, sizeof(char *) * u32CertNamesListMaxSz);
+                if (!pacFileList) {
+                    goto _EXIT;
+                }
+            }
+            u32PathLen = strlen(acPath);
+            pacFileList[u32ListSize] = (char *)malloc(u32PathLen + 1);
+            if (!pacFileList[u32ListSize]) goto _EXIT;
+            strncpy(pacFileList[u32ListSize], acPath, u32PathLen + 1);
+            u32ListSize++;
+
+
+        }
+		tfDirNext( &dir );
+	}
+    *pu32ListSize = u32ListSize;
+    *ppacFileList = pacFileList;
+
+_EXIT:
+	tfDirClose( &dir );
+    return;
+
+#elif WIN32
     WIN32_FIND_DATA fdFile;
     HANDLE hFind = NULL;
     uint32 u32ListSize = 0;
@@ -134,8 +180,6 @@ _EXIT:
 
 /**************************************************************/
 sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCertFile, const char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode) {
-    return 0;
-#ifdef WIN32
     sint8 ret = M2M_ERR_FAIL;
     uint32 u32Idx;
     uint8 u8nCerts = 0;
@@ -173,5 +217,4 @@ sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCer
         ret = TlsSrvSecWriteCertChain(pu8PrivKey, u32PrivKeySz, astrCertList, u8nCerts, pu8TlsSrvSecBuff, pu32SecSz, enuMode);
     }
     return ret;
-#endif
 }

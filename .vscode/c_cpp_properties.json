@@ -23,7 +23,8 @@
                 "CONF_WINC_USE_UART",
                 "DEBUG",
                 "UNICODE",
-                "CONF_WINC_DEBUG"
+                "CONF_WINC_DEBUG",
+                "POSIX"
             ],
             "macFrameworkPath": [
                 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
