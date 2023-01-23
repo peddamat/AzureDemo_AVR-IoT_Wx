@@ -48,7 +48,7 @@
 /*****************************************************************************/
 #include "crypto.h"
 
-#if __ROM_VER__ < ROM_VER_1
+// #if __ROM_VER__ < ROM_VER_1
 /*****************************************************************************/
 /* Macros                                                                    */
 /*****************************************************************************/
@@ -736,4 +736,4 @@ void aes_decrypt(aes_context_t *ctx, uint8 *ciphertext, uint8 *plaintext)
 
     key_addition32to8(t, &(ctx->ikeys[0]), plaintext);
 }
-#endif /* __ROM_VER__ < ROM_VER_1 */
+// #endif /* __ROM_VER__ < ROM_VER_1 */

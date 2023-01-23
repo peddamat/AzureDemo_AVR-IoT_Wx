@@ -1,14 +1,14 @@
 /*!
-@file       	
+@file
 	x509_cert.c
 
-@brief	
+@brief
 	X.509 certificate module.
 
-@author   		
+@author
 	Ahmed Ezzat
 
-@date      		
+@date
 	9 March 2013
 */
 
@@ -36,69 +36,69 @@ INCLUDES
 			X509 ENCODED FIELD IDs
 *======*======*======*======*======*/
 
-#define X509_VERSION								0xA0	
-/*!< 
-	Identifier of the version field  in the X.509 certificate 
-	encoding. It is given in the ASN.1 syntax as    
-	[0] EXPLICIT 
+#define X509_VERSION								0xA0
+/*!<
+	Identifier of the version field  in the X.509 certificate
+	encoding. It is given in the ASN.1 syntax as
+	[0] EXPLICIT
 	Context-Specific class (10) | constructed (1) | 00000
 */
 
 
 #define X509_SERIAL_NO								ASN1_INTEGER
-/*!< 
+/*!<
 	Identifier for the certificate serial num ber element.
 */
 
 #define X509_SIGNATURE								ASN1_SEQUENCE
-/*!< 
-	Identifier for the Signature algorithm ID element. 
+/*!<
+	Identifier for the Signature algorithm ID element.
 */
 
 
 #define X509_ISSUER									ASN1_SEQUENCE
-/*!< 
-	Identifier for the certificate ISSUER element. 
+/*!<
+	Identifier for the certificate ISSUER element.
 */
 
 
 #define X509_VALIDITY								ASN1_SEQUENCE
-/*!< 
+/*!<
 	Identifier for the certificate validity interval element.
 */
 
 
 #define X509_SUBJECT								ASN1_SEQUENCE
-/*!< 
-	Identifier for the certificate SUBJECT information element. 
+/*!<
+	Identifier for the certificate SUBJECT information element.
 */
 
 
 #define X509_SUBJECT_KEY_INFO						ASN1_SEQUENCE
-/*!< 
-	Identifier for the publick key information element. 
+/*!<
+	Identifier for the publick key information element.
 */
 
-#define X509_ISSUER_UNIQUE_ID						0x81 
-/*!< 
+#define X509_ISSUER_UNIQUE_ID						0x81
+/*!<
 	Encoded value for the issuerUniqueID tag. It is defined as
 	[1] IMPLICIT BIT STRING
 	Context-Specific class (10) | primitive (0) | 00001
 */
 
 
-#define X509_SUBJECT_UNIQUE_ID						0x82 
-/*!< 
+#define X509_SUBJECT_UNIQUE_ID						0x82
+/*!<
 	Encoded value for the subjectUniqueID tag. It is defined as
 	[2] IMPLICIT BIT STRING
 	Context-Specific class (10) | primitive (0) | 00010
 */
 
 
-#define X509_EXTENSIONS_ID							0xA3 
-/*!< 
+#define X509_EXTENSIONS_ID							0xA3
+/*!<
 	Encoded value for the issuerUniqueID tag. It is defined as
-	[3] EXPLICIT 
+	[3] EXPLICIT
 	Context-Specific class (10) | constructed (1) | 00011
 */
 
@@ -113,7 +113,7 @@ INCLUDES
 #define X509_GENERALIZED_TIME_LENGTH				0x0F
 /*!<
 	The UTC time for the X.509 encoding takes the format
-	YYYYMMDDHHMMSSZ. Each digit is BCD encoded as ASCII digit.	
+	YYYYMMDDHHMMSSZ. Each digit is BCD encoded as ASCII digit.
 */
 
 
@@ -121,10 +121,10 @@ INCLUDES
 
 
 /*======*======*======*======*======*
-			NAME ATTRIBUTE IDs 
+			NAME ATTRIBUTE IDs
 *======*======*======*======*======*/
 
-#define ID_AT										85 , 0x04 , 
+#define ID_AT										85 , 0x04 ,
 #define ID_AT_COMMONNAME							{ID_AT 3 }
 #define ID_AT_SERIALNUMBER							{ID_AT 5 }
 #define ID_AT_COUNTRYNAME							{ID_AT 6 }
@@ -152,7 +152,7 @@ INCLUDES
 				RSA ALGORITHM IDs
 *======*======*======*======*======*/
 
-#define PKCS_1										0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0d, 0x01, 0x01	
+#define PKCS_1										0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0d, 0x01, 0x01
 /* 1.2.840.113549.1.1 */
 
 #define RSA_ENCRYPTION								{PKCS_1, 1}						/* 1.2.840.113549.1.1		*/
@@ -171,7 +171,7 @@ INCLUDES
 #define ANSI_X9_62 									0x2A, 0x86, 0x48, 0xCE, 0x3D
 /* 1.2.840.10045 */
 
-#define ID_EC_SIG_TYPE								ANSI_X9_62, 0x04 
+#define ID_EC_SIG_TYPE								ANSI_X9_62, 0x04
 #define ECDSA_WITH_SHA1								{ID_EC_SIG_TYPE, 1}
 #define ECDSA_WITH_SHA224							{ID_EC_SIG_TYPE, 3, 1}
 #define ECDSA_WITH_SHA256							{ID_EC_SIG_TYPE, 3, 2}
@@ -181,7 +181,7 @@ INCLUDES
 #define ID_PUBLIC_KEY_TYPE							ANSI_X9_62, 02
 #define ID_EC_PUBLIC_KEY							{ID_PUBLIC_KEY_TYPE, 1}
 
-#define ELLIPTIC_CURVE								ANSI_X9_62, 3 
+#define ELLIPTIC_CURVE								ANSI_X9_62, 3
 #define PRIME_CURVE									ELLIPTIC_CURVE, 1
 #define EC_SECP256R1_OID							{PRIME_CURVE, 7}
 #define EC_SECP384R1_OID							{0x2B, 0x81, 0x04, 0x00, 0x22}	/* 1.3.132.0.34 */
@@ -202,7 +202,7 @@ INCLUDES
 /*!
 @struct	\
 	tenuCertParsingState
-	
+
 @brief	X.509 Certificate Parsing State Machine
 */
 typedef enum{
@@ -220,7 +220,7 @@ typedef enum{
 /*!
 @struct	\
 	tstrX520DistinguishedName
-	
+
 @brief
 */
 typedef struct{
@@ -233,7 +233,7 @@ typedef struct{
 /*!
 @struct	\
 	tstrX509AlgID
-	
+
 @brief
 */
 typedef struct{
@@ -247,7 +247,7 @@ typedef struct{
  GLOBALS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-static tstrX509AlgID	gastrSecAlgorithms[] = 
+static tstrX509AlgID	gastrSecAlgorithms[] =
 {
 	{RSA_ENCRYPTION					, PUBKEY_ALG_RSA	, 0						},
 	{MD5_WITH_RSA_ENCRYPTION		, TLS_SIG_ALG_RSA	, HASH_ALG_MD5		},
@@ -278,10 +278,10 @@ Function
 	ECC_GetCurve
 
 Description
- 
+
 
 Return
-	
+
 
 Author
 	Ahmed Ezzat
@@ -312,10 +312,10 @@ Function
 	Cert_DecodeAlgID
 
 Description
-	The function perform decoding to the data type "AlgorithmIdentifier" 
+	The function perform decoding to the data type "AlgorithmIdentifier"
 
 Return
-	
+
 
 Author
 	Ahmed Ezzat
@@ -328,7 +328,7 @@ Date
 *********************************************************************/
 TLS_CLIENT_API tstrX509AlgID* Cert_DecodeAlgID
 (
-tstrAsn1Context	*pstrX509Asn1Cxt, 
+tstrAsn1Context	*pstrX509Asn1Cxt,
 uint32 			u32Size,
 tstrAsn1Element	*pstrParam
 )
@@ -336,7 +336,7 @@ tstrAsn1Element	*pstrParam
 /*
 	AlgorithmIdentifier ::= SEQUENCE {
 		algorithm 	OBJECT IDENTIFIER,
-		parameters 	ANY DEFINED BY algorithm OPTIONAL 
+		parameters 	ANY DEFINED BY algorithm OPTIONAL
 	}
 */
 
@@ -346,7 +346,7 @@ tstrAsn1Element	*pstrParam
 	{
 		tstrAsn1Element 	strElem;
 		uint32				u32Offset = 0;
-		
+
 		u32Offset += ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
 		if(strElem.u8Tag == ASN1_OBJECT_IDENTIFIER)
 		{
@@ -364,7 +364,7 @@ tstrAsn1Element	*pstrParam
 					}
 				}
 			}
-			
+
 			if((u32Offset + 2) < u32Size)
 			{
 				u32Offset += ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
@@ -385,7 +385,7 @@ tstrAsn1Element	*pstrParam
 Function
 	Cert_DecodeX520Name
 
-Description: 
+Description:
 
 Return
 	None
@@ -417,18 +417,18 @@ tstrX520DistinguishedName	*pstrDN
 		{
 			uint8	au8CmnNameID[4] = ID_AT_COMMONNAME;
 			uint8	au8TempID[16];
-			
+
 			pstrDN->u8Type = 0;
 			ASN1_Read(pstrX509Asn1Cxt, strElem.u32Length, au8TempID);
 			if(!M2M_MEMCMP(au8CmnNameID, au8TempID, strElem.u32Length))
 				pstrDN->u8Type = X520_COMMON_NAME;
-			
+
 			if(ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem) != ASN1_FAIL)
 			{
 				pstrDN->u8Length = (uint8)strElem.u32Length;
 				ASN1_Read(pstrX509Asn1Cxt, strElem.u32Length, pstrDN->pu8Name);
 				s8Ret = X509_SUCCESS;
-			}				
+			}
 		}
 	}
 	return s8Ret;
@@ -454,52 +454,52 @@ Date
 *********************************************************************/
 TLS_CLIENT_API sint8 Cert_DecodeX520Name
 (
-tstrAsn1Context	*pstrX509Asn1Cxt, 
-uint32		 	u32Size, 
+tstrAsn1Context	*pstrX509Asn1Cxt,
+uint32		 	u32Size,
 tstrX520Name 	*pstrName,
 tstrMemPool	*pstrMemPool
 )
 {
 /*
 	Name ::= CHOICE { -- only one possibility for now --
-		rdnSequence RDNSequence 
+		rdnSequence RDNSequence
 	}
 
 	RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
-	
+
 	RelativeDistinguishedName ::=
 		SET SIZE (1..MAX) OF AttributeTypeAndValue
-	
+
 	AttributeTypeAndValue ::= SEQUENCE {
 		type 	AttributeType,
-		value 	AttributeValue 
+		value 	AttributeValue
 	}
-	
+
 	AttributeType ::= OBJECT IDENTIFIER
 	AttributeValue ::= ANY -- DEFINED BY AttributeType
-	
+
 	DirectoryString ::= CHOICE {
 		teletexString 		TeletexString (SIZE (1..MAX)),
 		printableString 	PrintableString (SIZE (1..MAX)),
 		universalString 	UniversalString (SIZE (1..MAX)),
 		utf8String 		UTF8String (SIZE (1..MAX)),
-		bmpString 		BMPString (SIZE (1..MAX)) 
+		bmpString 		BMPString (SIZE (1..MAX))
 	}
 */
 	sint8		s8Ret = X509_SUCCESS;
-	
+
 	if((pstrX509Asn1Cxt != NULL) && (pstrName != NULL))
 	{
 		tstrAsn1Element				strSetElem,strSeqElem;
 		tstrX520DistinguishedName	strDN;
 		tstrSha1Context				strSha1Cxt;
 		uint16						u16Offset = 0;
-		
+
 		SHA1_INIT(&strSha1Cxt);
 
 		pstrName->acCmnName[0] = 0;
-		
-		/* RelativeDistinguishedName 
+
+		/* RelativeDistinguishedName
 		*/
 		while(u16Offset < u32Size)
 		{
@@ -511,7 +511,7 @@ tstrMemPool	*pstrMemPool
 				{
 					s8Ret = X509_FAIL;
 					break;
-				}				
+				}
 				strDN.pu8Name = (uint8*)pstrMemPool->fpAlloc(pstrMemPool->pvPoolHandle, strSeqElem.u32Length);
 				if(strDN.pu8Name != NULL)
 				{
@@ -555,7 +555,7 @@ Description
 
 
 Return
-	
+
 
 Author
 	Ahmed Ezzat
@@ -588,7 +588,7 @@ tstrRSAPublicKey	*pstrRsaPublicKey
 		{
 			ASN1_Read(pstrX509Asn1Cxt, pstrKeyParam->u32Length, NULL);
 		}
-		
+
 		ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
 		if(strElem.u8Tag == ASN1_BIT_STRING)
 		{
@@ -611,7 +611,7 @@ tstrRSAPublicKey	*pstrRsaPublicKey
 						strElem.u32Length --;
 					}
 					pstrRsaPublicKey->u16NSize = (uint16)strElem.u32Length;
-					
+
 					ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
 					if(strElem.u8Tag == ASN1_INTEGER)
 					{
@@ -642,7 +642,7 @@ Description
 
 
 Return
-	
+
 
 Author
 	Ahmed Ezzat
@@ -655,14 +655,14 @@ Date
 *********************************************************************/
 TLS_CLIENT_API sint8 Cert_DecodeECCPubKey
 (
-tstrAsn1Context		*pstrX509Asn1Cxt, 
+tstrAsn1Context		*pstrX509Asn1Cxt,
 tstrAsn1Element		*pstrKeyParam,
 tstrMemPool		*pstrMemPool,
 tstrECPublicKey		*pstrEcdsaKey
 )
 {
 	sint8	s8Ret = X509_FAIL;
-	
+
 	if((pstrX509Asn1Cxt != NULL) && (pstrEcdsaKey != NULL) && (pstrKeyParam != NULL) && (pstrMemPool != NULL))
 	{
 		tstrAsn1Element	strElem;
@@ -672,7 +672,7 @@ tstrECPublicKey		*pstrEcdsaKey
 		{
 			uint8	u8Idx;
 			uint8	au8EccNamedCurveID[16];
-			
+
 			ASN1_Read(pstrX509Asn1Cxt, pstrKeyParam->u32Length, au8EccNamedCurveID);
 			for(u8Idx = 0 ; u8Idx < X509_NUM_SUPPORTED_SEC_ALGORITHMS ; u8Idx ++)
 			{
@@ -681,13 +681,13 @@ tstrECPublicKey		*pstrEcdsaKey
 					break;
 				}
 			}
-			
+
 			if(u8Idx == X509_NUM_SUPPORTED_SEC_ALGORITHMS) // For now, only secp256 is the only supported
 			{
 				TLS_ERR("X509 EC??\n");
 				goto _END__;
 			}
-			
+
 			pstrEcdsaKey->pstrCurve	= ECC_GetCurveInfo(gastrSecAlgorithms[u8Idx].u8AlgParam1);
 		}
 		else if(pstrKeyParam->u8Tag == ASN1_SEQUENCE)
@@ -698,7 +698,7 @@ tstrECPublicKey		*pstrEcdsaKey
 		{
 			goto _END__;
 		}
-		
+
 		ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
 		if(strElem.u8Tag == ASN1_BIT_STRING)
 		{
@@ -716,7 +716,7 @@ tstrECPublicKey		*pstrEcdsaKey
 			{
 				TLS_ERR("Ecc Point Fmt<%X>??\n", u8PointFmt);
 			}
-		}		
+		}
 	}
 _END__:
 	return s8Ret;
@@ -726,10 +726,10 @@ Function
 	Cert_DecodeSubjectPubKey
 
 Description
-	
+
 
 Return
-	
+
 
 Author
 	Ahmed Ezzat
@@ -742,8 +742,8 @@ Date
 *********************************************************************/
 TLS_CLIENT_API sint8 Cert_DecodeSubjectPubKey
 (
-tstrAsn1Context		*pstrX509Asn1Cxt, 
-uint32 				u32Size, 
+tstrAsn1Context		*pstrX509Asn1Cxt,
+uint32 				u32Size,
 tstrMemPool		*pstrMemPool,
 tstrPublicKey		*pstrPubKey
 )
@@ -751,9 +751,9 @@ tstrPublicKey		*pstrPubKey
 /*
 	SubjectPublicKeyInfo ::= SEQUENCE {
 		algorithm 			AlgorithmIdentifier,
-		subjectPublicKey	BIT STRING 
+		subjectPublicKey	BIT STRING
 	}
-*/	
+*/
 	sint8		s8Ret = X509_FAIL;
 
 	if((pstrX509Asn1Cxt != NULL) && (pstrPubKey != NULL))
@@ -792,10 +792,10 @@ Function
 	Cert_DecodeValidity
 
 Description
-	
+
 
 Return
-	
+
 
 Author
 	Ahmed Ezzat
@@ -808,7 +808,7 @@ Date
 *********************************************************************/
 TLS_CLIENT_API sint8 Cert_DecodeValidity
 (
-tstrAsn1Context	*pstrX509Asn1Cxt, 
+tstrAsn1Context	*pstrX509Asn1Cxt,
 uint32 			u32Size,
 tstrX509Cert	*pstrCer
 )
@@ -816,7 +816,7 @@ tstrX509Cert	*pstrCer
 /*
 	Validity ::= SEQUENCE {
 		notBefore 	Time,
-		notAfter 		Time 
+		notAfter 		Time
 	}
 */
 	sint8	s8Ret = X509_FAIL;
@@ -834,14 +834,14 @@ tstrX509Cert	*pstrCer
 			ASN1_Read(pstrX509Asn1Cxt, strElem.u32Length, au8Time);
 			au8Time[strElem.u32Length] = '\0';
 			Cert_DecodeTime(au8Time, &pstrCer->strStartDate);
-			
+
 			if(ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem)  != ASN1_INVALID)
 			{
 				/* End time. */
 				ASN1_Read(pstrX509Asn1Cxt, strElem.u32Length, au8Time);
 				au8Time[strElem.u32Length] = '\0';
 				Cert_DecodeTime(au8Time, &pstrCer->strExpiryDate);
-				
+
 				if(pstrCer->strExpiryDate.u16Year != 9999)
 				{
 					if(X509_GET_SYS_TIME(&strSysTime) == M2M_SUCCESS)
@@ -885,12 +885,12 @@ Function
 	X509Cert_DecodeTBSCertificate
 
 Description
-	
+
 
 Return
-	
 
-Author	
+
+Author
 	Ahmed Ezzat
 
 Version
@@ -901,8 +901,8 @@ Date
 *********************************************************************/
 TLS_CLIENT_API sint8 Cert_DecodeTBSCertificate
 (
-tstrAsn1Context	*pstrX509Asn1Cxt, 
-uint16 			u16CertSize, 
+tstrAsn1Context	*pstrX509Asn1Cxt,
+uint16 			u16CertSize,
 tstrX509Cert 	*pstrCert
 )
 {
@@ -920,9 +920,9 @@ tstrX509Cert 	*pstrCert
 			subjectUniqueID 	[2] 	IMPLICIT UniqueIdentifier OPTIONAL,
 										-- If present, version MUST be v2 or v3
 			extensions			[3] 	Extensions OPTIONAL
-										-- If present, version MUST be v3 -- 
+										-- If present, version MUST be v3 --
 		}
-	
+
 */
 	sint8		s8Ret = X509_SUCCESS;
 
@@ -931,8 +931,8 @@ tstrX509Cert 	*pstrCert
 		uint16					u16ReadOffset = 0;
 		tstrAsn1Element			strElement;
 		tenuCertParsingState	enuCertState 	= CERT_VERSION_PENDING;
-		
-		/* Loop on the elements of the certificate until finishing. 
+
+		/* Loop on the elements of the certificate until finishing.
 		*/
 		while(u16ReadOffset < u16CertSize)
 		{
@@ -945,7 +945,7 @@ tstrX509Cert 	*pstrCert
 				*/
 				if(strElement.u8Tag == X509_VERSION)
 				{
-					/* The encoding of version is on the form 
+					/* The encoding of version is on the form
 							A0 03 02 01 ver
 					*/
 					if(strElement.u32Length < 3)
@@ -959,7 +959,7 @@ tstrX509Cert 	*pstrCert
 				else if(strElement.u8Tag == X509_SERIAL_NO)
 				{
 					uint32	u32DropLen = 0;
-					
+
 					/* The certificate version number is absent from the certificate.
 					It will be set to the default value Version 1.0
 					*/
@@ -971,7 +971,7 @@ tstrX509Cert 	*pstrCert
 						strElement.u32Length = X509_SERIAL_NO_MAX_SZ;
 						u32DropLen = strElement.u32Length - X509_SERIAL_NO_MAX_SZ;
 					}
-					
+
 					pstrCert->u8SerialNumberLength = (uint8)strElement.u32Length;
 					ASN1_Read(pstrX509Asn1Cxt, strElement.u32Length, pstrCert->au8SerialNo);
 					ASN1_Read(pstrX509Asn1Cxt, u32DropLen, NULL);
@@ -993,7 +993,7 @@ tstrX509Cert 	*pstrCert
 						strElement.u32Length = X509_SERIAL_NO_MAX_SZ;
 						u32DropLen = strElement.u32Length - X509_SERIAL_NO_MAX_SZ;
 					}
-					
+
 					pstrCert->u8SerialNumberLength = (uint8)strElement.u32Length;
 					ASN1_Read(pstrX509Asn1Cxt, strElement.u32Length, pstrCert->au8SerialNo);
 					ASN1_Read(pstrX509Asn1Cxt, u32DropLen, NULL);
@@ -1082,12 +1082,12 @@ Function
 	Ecdsa_DecodeSignature
 
 Description
-	
+
 
 Return
-	
 
-Author	
+
+Author
 	Ahmed Ezzat
 
 Version
@@ -1104,14 +1104,14 @@ uint16			*pu16SigSz
 )
 {
 	sint8		s8Ret = X509_FAIL;
-	
+
 	if((pstrX509Asn1Cxt != NULL) && (pu8Sig != NULL))
 	{
 		tstrAsn1Element	strElem;
 		uint16			u16SigSz;
 		uint16			u16TmpSz		= 0;
 		uint8			u8LoopCount		= 2;
-		
+
 		u16TmpSz	= *pu16SigSz;
 		u16SigSz 	= 0;
 		ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
@@ -1152,12 +1152,12 @@ Function
 	X509Cert_DecodeTBSCertificate
 
 Description
-	
+
 
 Return
-	
 
-Author	
+
+Author
 	Ahmed Ezzat
 
 Version
@@ -1168,26 +1168,26 @@ Date
 *********************************************************************/
 TLS_CLIENT_API sint8 Cert_DecodeSignature
 (
-tstrAsn1Context	*pstrX509Asn1Cxt, 
-uint16 			u16SigSize, 
+tstrAsn1Context	*pstrX509Asn1Cxt,
+uint16 			u16SigSize,
 tstrX509Cert 	*pstrCert
 )
 {
 	sint8		s8Ret = X509_FAIL;
-	
+
 	if((pstrX509Asn1Cxt != NULL) && (pstrCert != NULL))
 	{
 		tstrAsn1Element	strElem;
-		
+
 		ASN1_GetNextElement(pstrX509Asn1Cxt, &strElem);
 		if((strElem.u8Tag == ASN1_BIT_STRING) && (strElem.u32Length < u16SigSize))
 		{
-			/* Jump one byte. 
+			/* Jump one byte.
 			*/
 			ASN1_Read(pstrX509Asn1Cxt, 1, NULL);
 			strElem.u32Length --;
-		
-			/* Store the obtained signature. 
+
+			/* Store the obtained signature.
 			*/
 			pstrCert->pu8Sig = (uint8*)pstrCert->pstrMemPool->fpAlloc(pstrCert->pstrMemPool->pvPoolHandle, strElem.u32Length);
 			if(pstrCert->pu8Sig != NULL)
@@ -1195,7 +1195,7 @@ tstrX509Cert 	*pstrCert
 				if(pstrCert->enuSignAlg == TLS_SIG_ALG_ECDSA)
 				{
 					pstrCert->u16SigSz	= (uint16)strElem.u32Length;
-					s8Ret = X509_DecodeEcdsaSignature(pstrX509Asn1Cxt, pstrCert->pu8Sig, &pstrCert->u16SigSz);					
+					s8Ret = X509_DecodeEcdsaSignature(pstrX509Asn1Cxt, pstrCert->pu8Sig, &pstrCert->u16SigSz);
 				}
 				else if(pstrCert->enuSignAlg == TLS_SIG_ALG_RSA)
 				{
@@ -1207,7 +1207,7 @@ tstrX509Cert 	*pstrCert
 					s8Ret = X509_SUCCESS;
 				}
 			}
-		}		
+		}
 	}
 	return s8Ret;
 }
@@ -1215,7 +1215,7 @@ tstrX509Cert 	*pstrCert
 Function
 	Cert_ComputeTBSCertHash
 
-Description 
+Description
 
 Return
 	None
@@ -1254,11 +1254,11 @@ sint8 Cert_ComputeTBSCertHash(tstrTlsBuffer *pstrCrtBuff, tstrTLSBufferPos *pstr
 					/* Save the current position of the certificate message buffer.
 					*/
 					TLS_BufferGetPos(pstrCrtBuff, &strTmpPos);
-				
+
 					/* Set the buffer to the start of the TBS certificate for Hash Calculation.
 					*/
 					TLS_BufferSetPos(pstrCrtBuff, pstrTBSCrt);
-				
+
 					fpHash(&strHash, SHA_FLAGS_INIT, NULL, 0, NULL);
 					while(u16TBSSize > 0)
 					{
@@ -1267,14 +1267,14 @@ sint8 Cert_ComputeTBSCertHash(tstrTlsBuffer *pstrCrtBuff, tstrTLSBufferPos *pstr
 						fpHash(&strHash, SHA_FLAGS_UPDATE, pu8TmpBuf, u16ReadSize, NULL);
 					}
 					fpHash(&strHash, SHA_FLAGS_FINISH, NULL, 0, pstrCert->pu8Hash);
-				
+
 					/* Reload the saved position of the certificate message buffer.
 					*/
 					TLS_BufferSetPos(pstrCrtBuff, &strTmpPos);
 					ret = X509_SUCCESS;
 				}
 			}
-		}		
+		}
 	}
 	return ret;
 }
@@ -1282,7 +1282,7 @@ sint8 Cert_ComputeTBSCertHash(tstrTlsBuffer *pstrCrtBuff, tstrTLSBufferPos *pstr
 Function
 	X509Cert_Decode
 
-Description 
+Description
 
 Return
 	None
@@ -1297,8 +1297,8 @@ Date
 	7 March 2013
 *********************************************************************/
 TLS_CLIENT_API sint8 X509Cert_Decode
-(	
-tstrTlsBuffer	*pstrX509Buffer, 
+(
+tstrTlsBuffer	*pstrX509Buffer,
 uint32 			u32CertSize,
 tstrMemPool	*pstrPool,
 tstrX509Cert 	*pstrCert,
@@ -1310,12 +1310,12 @@ uint8			bDumpX509
 	Certificate ::= SEQUENCE {
 		tbsCertificate 			TBSCertificate,
 		signatureAlgorithm 		AlgorithmIdentifier,
-		signature 				BIT STRING 
+		signature 				BIT STRING
 	}
 
 */
 	sint8	s8Ret = X509_FAIL;
-	
+
 	if((pstrX509Buffer != NULL) && (pstrCert != NULL) && (pstrPool != NULL))
 	{
 		if(pstrPool->fpAlloc != NULL)
@@ -1327,7 +1327,7 @@ uint8			bDumpX509
 			tstrAsn1Context		strX509ASN1Cxt;
 			tstrX509AlgID		*pstrSignHashAlg;
 
-			/* Initialize the ASN1 Decoding operation. 
+			/* Initialize the ASN1 Decoding operation.
 			*/
 			strX509ASN1Cxt.pstrTlsBuffer	= pstrX509Buffer;
 			pstrCert->pstrMemPool			= pstrPool;
@@ -1338,8 +1338,8 @@ uint8			bDumpX509
 				*/
 				TLS_BufferGetPos(pstrX509Buffer, &strTBSCert);
 				u32Offset -= strElement.u32Length;
-				
-				/* tbsCertificate. 
+
+				/* tbsCertificate.
 				*/
 				u16TBSCertSize = ASN1_GetNextElement(&strX509ASN1Cxt, &strElement);
 				if((strElement.u8Tag == ASN1_SEQUENCE) && (strElement.u32Length < u32CertSize))
@@ -1352,7 +1352,7 @@ uint8			bDumpX509
 						u32Offset += ASN1_GetNextElement(&strX509ASN1Cxt, &strElement);
 						if((strElement.u8Tag == ASN1_SEQUENCE) && (u32Offset < u32CertSize))
 						{
-							/* Check if the signatureAlgorithm ID obtained in this element 
+							/* Check if the signatureAlgorithm ID obtained in this element
 							matches the signature field of the TBS Certificate.
 							*/
 							pstrSignHashAlg = Cert_DecodeAlgID(&strX509ASN1Cxt, strElement.u32Length, NULL);
@@ -1403,7 +1403,7 @@ Date
 TLS_CLIENT_API sint8 Cert_DecodeTime(uint8 *pu8Time, tstrSystemTime *pstrTime)
 {
 	sint8		s8Ret = X509_FAIL;
-	
+
 	if(pu8Time != NULL)
 	{
 		uint8	u8TimeLength = (uint8)strlen((char*)pu8Time);
@@ -1411,7 +1411,7 @@ TLS_CLIENT_API sint8 Cert_DecodeTime(uint8 *pu8Time, tstrSystemTime *pstrTime)
 		uint8	u8Idx;
 
 		M2M_MEMCPY(au8Time, pu8Time, 20);
-		
+
 		if((u8TimeLength >= X509_UTC_TIME_LENGTH) && (u8TimeLength <= X509_GENERALIZED_TIME_LENGTH))
 		{
 			if(au8Time[u8TimeLength - 1] == 'Z')
@@ -1420,7 +1420,7 @@ TLS_CLIENT_API sint8 Cert_DecodeTime(uint8 *pu8Time, tstrSystemTime *pstrTime)
 				{
 					au8Time[u8Idx] -= '0';
 				}
-				
+
 				if(u8TimeLength == X509_UTC_TIME_LENGTH)
 				{
 					pstrTime->u16Year 	= (au8Time[0] * 10) + au8Time[1];
@@ -1434,18 +1434,18 @@ TLS_CLIENT_API sint8 Cert_DecodeTime(uint8 *pu8Time, tstrSystemTime *pstrTime)
 				}
 				pstrTime->u8Month 		= GET_VAL(au8Time, u8Idx);
 				u8Idx += 2;
-				
+
 				pstrTime->u8Day 		= GET_VAL(au8Time, u8Idx);
 				u8Idx += 2;
 
 				pstrTime->u8Hour		= GET_VAL(au8Time, u8Idx);
 				u8Idx += 2;
-				
+
 				pstrTime->u8Minute		= GET_VAL(au8Time, u8Idx);
 				u8Idx += 2;
-				
+
 				pstrTime->u8Second		= GET_VAL(au8Time, u8Idx);
-				
+
 				s8Ret = X509_SUCCESS;
 			}
 		}
@@ -1460,7 +1460,7 @@ Description
 	if Return value < 0 then it indicates T1 is less than T2.
 	if Return value > 0 then it indicates T2 is less than T1.
 	if Return value = 0 then it indicates T1 is equal to T2.
-	
+
 Return
 	None
 
@@ -1476,7 +1476,7 @@ Date
 sint8 Cert_CompareTime(tstrSystemTime *pstrT1, tstrSystemTime *pstrT2)
 {
 	sint8		s8Cmp = 1;
-	
+
 	if((pstrT1 != NULL) && (pstrT2 != NULL))
 	{
 		/* YEAR.
@@ -1548,104 +1548,109 @@ TLS_CLIENT_API void X509Cert_Dump(tstrX509Cert *pstrCert)
 {
 	if(pstrCert != NULL)
 	{
-#ifdef X509_DUMP_ENABLE
-		uint32	i;
+		TLS_LOG("\n- TLS Certificate Details:\n\n");
 
-		TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
-		TLS_LOG("     CERTIFICATE <%s>\n", pstrCert->strSubject.acCmnName);
-		TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
-		
-		TLS_LOG("VERSION                  %u\n",pstrCert->u8Version + 1);
-		TLS_LOG("SERIAL NO                ");
-		for(i = 0 ; i < pstrCert->u8SerialNumberLength ; i++)
-		{
-			TLS_LOG("%02X ", pstrCert->au8SerialNo[i]);
-		}
-		TLS_LOG("\n");
-		
-		TLS_LOG("SIGNATURE ALGORITHM      ");
-		if(pstrCert->enuSignAlg == TLS_SIG_ALG_RSA)
-		{
-			TLS_LOG("RSA");
-		}
-		else if(pstrCert->enuSignAlg == TLS_SIG_ALG_ECDSA)
-		{
-			TLS_LOG("ECDSA");
-		}
-		TLS_LOG("\n");
+		// if (verbose)
+		// {
+			uint32	i;
 
-		TLS_LOG("HASH ALGORITHM           ");
-		if(pstrCert->enuHashAlg == HASH_ALG_SHA1)
-		{
-			TLS_LOG("SHA1");
-		}
-		else if(pstrCert->enuHashAlg == HASH_ALG_SHA224)
-		{
-			TLS_LOG("SHA224");
-		}
-		else if(pstrCert->enuHashAlg == HASH_ALG_SHA256)
-		{
-			TLS_LOG("SHA256");
-		}
-		else if(pstrCert->enuHashAlg == HASH_ALG_SHA1)
-		{
-			TLS_LOG("SHA384");
-		}
-		else if(pstrCert->enuHashAlg == HASH_ALG_SHA512)
-		{
-			TLS_LOG("SHA512");
-		}
-		TLS_LOG("\n");
+			// TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
+			// TLS_LOG("     CERTIFICATE <%s>\n", pstrCert->strSubject.acCmnName);
+			// TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
 
-		TLS_LOG("ISSUER                   ");
-		if(strlen(pstrCert->strIssuer.acCmnName) != 0)
-		{
-			TLS_LOG("%s",pstrCert->strIssuer.acCmnName);
-		}
-		TLS_LOG("\n");
+			TLS_LOG("VERSION                  %u\n",pstrCert->u8Version + 1);
+			TLS_LOG("SERIAL NO                ");
+			for(i = 0 ; i < pstrCert->u8SerialNumberLength ; i++)
+			{
+				TLS_LOG("%02X ", pstrCert->au8SerialNo[i]);
+			}
+			TLS_LOG("\n");
 
-		TLS_LOG("SUBJECT                  ");
-		if(strlen(pstrCert->strSubject.acCmnName) != 0)
-		{
-			TLS_LOG("%s",pstrCert->strSubject.acCmnName);
-		}
-		TLS_LOG("\n");
+			TLS_LOG("SIGNATURE ALGORITHM      ");
+			if(pstrCert->enuSignAlg == TLS_SIG_ALG_RSA)
+			{
+				TLS_LOG("RSA");
+			}
+			else if(pstrCert->enuSignAlg == TLS_SIG_ALG_ECDSA)
+			{
+				TLS_LOG("ECDSA");
+			}
+			TLS_LOG("\n");
 
-		TLS_LOG("Valid From               ");
-		TLS_LOG("%d-%02d-%02d %02d:%02d:%02d\n",
-				pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day,
-				pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second);
-			
-		TLS_LOG("Valid to                 ");
-		TLS_LOG("%d-%02d-%02d %02d:%02d:%02d\n",
-				pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day,
-				pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
+			TLS_LOG("HASH ALGORITHM           ");
+			if(pstrCert->enuHashAlg == HASH_ALG_SHA1)
+			{
+				TLS_LOG("SHA1");
+			}
+			else if(pstrCert->enuHashAlg == HASH_ALG_SHA224)
+			{
+				TLS_LOG("SHA224");
+			}
+			else if(pstrCert->enuHashAlg == HASH_ALG_SHA256)
+			{
+				TLS_LOG("SHA256");
+			}
+			else if(pstrCert->enuHashAlg == HASH_ALG_SHA1)
+			{
+				TLS_LOG("SHA384");
+			}
+			else if(pstrCert->enuHashAlg == HASH_ALG_SHA512)
+			{
+				TLS_LOG("SHA512");
+			}
+			TLS_LOG("\n");
 
-		TLS_LOG("\n");
-		if(pstrCert->strPubKey.enuType == PUBKEY_ALG_RSA)
-		{
-			TLS_LOG("PUBLIC KEY               RSA (%u bits)\n", pstrCert->strPubKey.strRSAKey.u16NSize * 8);
-			M2M_DUMP_BUF("Modulus", pstrCert->strPubKey.strRSAKey.pu8N, pstrCert->strPubKey.strRSAKey.u16NSize);
-			M2M_DUMP_BUF("Exponent", pstrCert->strPubKey.strRSAKey.pu8E, pstrCert->strPubKey.strRSAKey.u16ESize);			
-		}
-		else if(pstrCert->strPubKey.enuType == PUBKEY_ALG_ECC)
-		{
-			TLS_LOG("PUBLIC KEY\n\t");
-			M2M_DUMP_BUF("ECDSA", pstrCert->strPubKey.strEccKey.strQ.X, (pstrCert->strPubKey.strEccKey.strQ.u16Size * 2)); 
-		}
+			TLS_LOG("ISSUER                   ");
+			if(strlen(pstrCert->strIssuer.acCmnName) != 0)
+			{
+				TLS_LOG("%s",pstrCert->strIssuer.acCmnName);
+			}
+			TLS_LOG("\n");
 
-		TLS_LOG("\n");
-		M2M_DUMP_BUF("SIGNATURE", pstrCert->pu8Sig, pstrCert->u16SigSz);
-		TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
-#else
-		TLS_INFO("*=*=* X509 *=*=*\n");
-		TLS_INFO("\tSubject <%s>\n", ((strlen(pstrCert->strSubject.acCmnName) != 0) ? pstrCert->strSubject.acCmnName	: " "));
-		TLS_INFO("\tIssuer  <%s>\n",((strlen(pstrCert->strIssuer.acCmnName) != 0) ? pstrCert->strIssuer.acCmnName	: " "));
-		TLS_INFO("\t<%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n", \
-				pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day, \
-				pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second, \
-				pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day, \
-				pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
-#endif
+			TLS_LOG("SUBJECT                  ");
+			if(strlen(pstrCert->strSubject.acCmnName) != 0)
+			{
+				TLS_LOG("%s",pstrCert->strSubject.acCmnName);
+			}
+			TLS_LOG("\n");
+
+			TLS_LOG("Valid From               ");
+			TLS_LOG("%d-%02d-%02d %02d:%02d:%02d\n",
+					pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day,
+					pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second);
+
+			TLS_LOG("Valid to                 ");
+			TLS_LOG("%d-%02d-%02d %02d:%02d:%02d\n",
+					pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day,
+					pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
+
+			TLS_LOG("\n");
+			if(pstrCert->strPubKey.enuType == PUBKEY_ALG_RSA)
+			{
+				TLS_LOG("Public-Key: (RSA %u bits)\n", pstrCert->strPubKey.strRSAKey.u16NSize * 8);
+				M2M_DUMP_BUF("  Modulus ", pstrCert->strPubKey.strRSAKey.pu8N, pstrCert->strPubKey.strRSAKey.u16NSize);
+				M2M_DUMP_BUF("  Exponent ", pstrCert->strPubKey.strRSAKey.pu8E, pstrCert->strPubKey.strRSAKey.u16ESize);
+			}
+			else if(pstrCert->strPubKey.enuType == PUBKEY_ALG_ECC)
+			{
+				TLS_LOG("Public-Key\n\t");
+				M2M_DUMP_BUF("ECDSA", pstrCert->strPubKey.strEccKey.strQ.X, (pstrCert->strPubKey.strEccKey.strQ.u16Size * 2));
+			}
+
+			TLS_LOG("\n\n");
+			M2M_DUMP_BUF("  SIGNATURE", pstrCert->pu8Sig, pstrCert->u16SigSz);
+			// TLS_LOG("*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=\n");
+		// }
+		// else
+		// {
+		// 	// TLS_INFO("*=*=* X509 *=*=*\n");
+		// 	TLS_INFO("Subject <%s>\n", ((strlen(pstrCert->strSubject.acCmnName) != 0) ? pstrCert->strSubject.acCmnName	: " "));
+		// 	TLS_INFO("Issuer  <%s>\n",((strlen(pstrCert->strIssuer.acCmnName) != 0) ? pstrCert->strIssuer.acCmnName	: " "));
+		// 	TLS_INFO("<%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
+		// 			pstrCert->strStartDate.u16Year, pstrCert->strStartDate.u8Month, pstrCert->strStartDate.u8Day, \
+		// 			pstrCert->strStartDate.u8Hour, pstrCert->strStartDate.u8Minute, pstrCert->strStartDate.u8Second, \
+		// 			pstrCert->strExpiryDate.u16Year, pstrCert->strExpiryDate.u8Month, pstrCert->strExpiryDate.u8Day, \
+		// 			pstrCert->strExpiryDate.u8Hour, pstrCert->strExpiryDate.u8Minute, pstrCert->strExpiryDate.u8Second);
+		// }
 	}
 }

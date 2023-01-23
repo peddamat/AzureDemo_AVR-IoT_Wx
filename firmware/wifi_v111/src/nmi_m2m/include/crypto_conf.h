@@ -93,6 +93,6 @@ Enable the HW accelerator for the BIGINT module of the 1003A0 ASIC.
  *	Debug options						*
  ****************************************/
 //#define __TLS_CIPHERSUITE_DBG__
-//#define X509_DUMP_ENABLE
+// #define X509_DUMP_ENABLE
 
 #endif /* __TLS_CONF_H__ */

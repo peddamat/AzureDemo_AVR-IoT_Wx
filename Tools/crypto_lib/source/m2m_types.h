@@ -9,8 +9,8 @@ INCLUDES
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "common\include\nm_common.h"
-#include "driver\include\m2m_types.h"
+#include "common/include/nm_common.h"
+#include "driver/include/m2m_types.h"
 
 #ifdef WIN32
 typedef long long uint64;
@@ -166,7 +166,7 @@ do														\
 	printf("\r\n");									\
 }while(0)
 
-#define TLS_LOG(...)					do{printf(__VA_ARGS__);printf("\r");}while(0)
+#define TLS_LOG(...)					do{printf("  "); printf(__VA_ARGS__);}while(0)
 #define TLS_ERR							TLS_LOG
 #define TLS_INFO						TLS_LOG
 

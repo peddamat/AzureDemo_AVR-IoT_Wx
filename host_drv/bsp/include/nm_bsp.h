@@ -112,7 +112,7 @@ typedef unsigned short  uint16;
 * @typedef      unsigned long  uint32;
 * @brief        Range of values between 0 to 4294967295
 */
-typedef unsigned long   uint32;
+typedef unsigned int uint32;
 
 /*!
 * @ingroup Data Types
@@ -133,7 +133,7 @@ typedef signed short    sint16;
 * @typedef      signed long        sint32;
 * @brief        Range of values between -2147483648 to 2147483647
 */
-typedef signed long     sint32;
+typedef signed int sint32;
 /**@}*/     //DataTypes
 
 #ifndef CORTUS_APP

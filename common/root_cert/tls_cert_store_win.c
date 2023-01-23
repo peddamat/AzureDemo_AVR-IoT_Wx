@@ -48,12 +48,14 @@ INCLUDES
 #include <string.h>
 
 #include "crypto_lib_api.h"
-#include "driver\include\m2m_types.h"
+#include "driver/include/m2m_types.h"
 #include "programmer.h"
 #include "tls_srv_sec.h"
 
 /**************************************************************/
 int ReadFileToBuffer(const char *pcFileName, uint8 **ppu8FileData, uint32 *pu32FileSize) {
+    return 0;
+#ifdef WIN32
     FILE *fp;
     int ret = M2M_ERR_FAIL;
 
@@ -76,10 +78,12 @@ int ReadFileToBuffer(const char *pcFileName, uint8 **ppu8FileData, uint32 *pu32F
         fclose(fp);
     }
     return ret;
+#endif
 }
 
 /**************************************************************/
 void ListDirectoryContents(const char *pcDir, char *pcExt, char ***ppacFileList, uint32 *pu32ListSize) {
+#ifdef WIN32
     WIN32_FIND_DATA fdFile;
     HANDLE hFind = NULL;
     uint32 u32ListSize = 0;
@@ -125,10 +129,13 @@ void ListDirectoryContents(const char *pcDir, char *pcExt, char ***ppacFileList,
 _EXIT:
     FindClose(hFind);
     return;
+#endif
 }
 
 /**************************************************************/
 sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCertFile, const char *pcCADirPath, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode) {
+    return 0;
+#ifdef WIN32
     sint8 ret = M2M_ERR_FAIL;
     uint32 u32Idx;
     uint8 u8nCerts = 0;
@@ -166,4 +173,5 @@ sint8 TlsCertStoreWriteCertChain(const char *pcPrivKeyFile, const char *pcSrvCer
         ret = TlsSrvSecWriteCertChain(pu8PrivKey, u32PrivKeySz, astrCertList, u8nCerts, pu8TlsSrvSecBuff, pu32SecSz, enuMode);
     }
     return ret;
+#endif
 }

@@ -13,6 +13,33 @@
             "windowsSdkVersion": "10.0.20348.0",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
             "configurationProvider": "ms-vscode.makefile-tools"
+        },
+        {
+            "name": "Posix",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "CONF_WINC_USE_UART",
+                "DEBUG",
+                "UNICODE",
+                "CONF_WINC_DEBUG"
+            ],
+            "macFrameworkPath": [
+                "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "intelliSenseMode": "macos-clang-x64",
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "mergeConfigurations": false,
+            "configurationProvider": "ms-vscode.makefile-tools",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4
