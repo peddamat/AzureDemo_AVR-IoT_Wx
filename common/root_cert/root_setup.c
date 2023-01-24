@@ -51,6 +51,20 @@ INCLUDES
     format of the content.
 */
 
+#define M2M_DUMP_BUF(name,Buffer,size)					\
+do														\
+{														\
+	int k;												\
+	uint8	*buf = Buffer;								\
+	printf("%s(%08X)(%u)",name,(uint32)buf, size);	\
+	for (k = 0; k < size; k++)							\
+	{													\
+		if (!(k % 16))									\
+		printf("\r\n\t");								\
+		printf("%02X ", buf[k]);						\
+	}													\
+	printf("\r\n");									\
+}while(0)
 #define K_DUMP(name, Buffer, size)   \
     do {                             \
         int k;                       \
@@ -80,7 +94,7 @@ void writeHexString2(const char *filename, const char *name, uint8 *Buffer, int 
 }
 
 void writePrivKey2(const char *name, uint8 *Buffer, int size) {
-    writeHexString2("private.asn1", name, Buffer, size);
+    writeHexString2("public.asn1", name, Buffer, size);
 }
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
@@ -98,12 +112,10 @@ typedef enum{
     ROOT_CERT_PUBKEY_ECDSA      = 2
 }tenuRootCertPubKeyType;
 
-
 typedef struct{
     uint16 u16NSz;
     uint16 u16ESz;
 }tstrRootCertRsaKeyInfo;
-
 
 typedef struct{
     uint16 u16CurveID;
@@ -117,7 +129,6 @@ typedef struct{
         tstrRootCertEcdsaKeyInfo strEcsdaKeyInfo;
     };
 }tstrRootCertPubKeyInfo;
-
 
 /*!
 @struct
@@ -368,9 +379,9 @@ sint8 RootCertStoreLoad(const char *pcFwFile, uint8 port, uint8* vflash)
 		break;
 	}
     if (ret == M2M_SUCCESS) {
-        printf("Root Certificate Store Updated Successfully On: %s\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
+        printf("Root Certificate Store Loaded Successfully From: %s\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
     } else {
-        printf("Root Certificate Store Update FAILED To %s!!!\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
+        printf("Root Certificate Store Load FAILED From %s!!!\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
     }
 
 	return ret;
@@ -488,6 +499,7 @@ int DumpRootCerts(const char *outfile)
     uint16                  u16Offset;
     tstrRootCertPubKeyInfo  *pstrKey;
 
+    // Points to the very top of the Root Cert Store memory
     pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);
     u16Offset        = sizeof(tstrRootCertFlashHeader);
 
@@ -501,36 +513,47 @@ int DumpRootCerts(const char *outfile)
 
         for(u32Idx = 0 ; u32Idx < u32nStoredCerts ; u32Idx ++)
         {
+            // Points to the first cert after the header
             pstrEntryHdr = (tstrRootCertEntryHeader*)((void *)&gau8RootCertMem[u16Offset]);
             pstrKey      = &pstrEntryHdr->strPubKey;
+
+            K_DUMP("\n  Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
 
             if (pstrEntryHdr->strPubKey.u32PubKeyType == 1)
             {
                 printf("  Certificate %i: RSA", u32Idx + 1);
+                uint8 *pu8N = &gau8RootCertMem[u16Offset+ sizeof(tstrRootCertEntryHeader)];
+                uint8 *pu8E = pu8N + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz);
+
+                // if (strcmp(outfile, "") != 0) {
+                    writeHexString2("public.sh", "openssl asn1parse -genconf public.asn1 -out public.der -noout", NULL, 0);
+                    writeHexString2("public.sh", "openssl pkey -pubin -in public.der -inform DER -text -noout", NULL, 0);
+                    writePrivKey2("asn1=SEQUENCE:pubkeyinfo", NULL, 0);
+                    writePrivKey2("[pubkeyinfo]", NULL, 0);
+                    writePrivKey2("algorithm=SEQUENCE:rsa_alg", NULL, 0);
+                    writePrivKey2("pubkey=BITWRAP,SEQUENCE:rsapubkey", NULL, 0);
+                    writePrivKey2("[rsa_alg]", NULL, 0);
+                    writePrivKey2("algorithm=OID:rsaEncryption", NULL, 0);
+                    writePrivKey2("parameter=NULL", NULL, 0);
+                    writePrivKey2("[rsapubkey]", NULL, 0);
+                    // TODO: Figure out how to determine the offsets to these...
+                    writePrivKey2("n=INTEGER:0x", pu8N, pstrKey->strRsaKeyInfo.u16NSz);
+                    writePrivKey2("e=INTEGER:0x", pu8E, pstrKey->strRsaKeyInfo.u16ESz);
+                // }
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
                 printf("  Certificate %i: ECDSA", u32Idx + 1);
+                uint8 *pu8Key = pstrEntryHdr + sizeof(tstrRootCertEntryHeader);
+
+                // if (strcmp(outfile, "") != 0) {
+                    // TODO: Figure out how to determine the offsets to these...
+                    M2M_DUMP_BUF("key=INTEGER:0x", pu8Key, pstrKey->strEcsdaKeyInfo.u16KeySz);
+                // }
             }
             else
             {
                 printf("  Certificate %i: UNKNOWN!", u32Idx + 1);
-            }
-
-            K_DUMP("\n  Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
-
-            if (strcmp(outfile, "") != 0) {
-                writePrivKey2("asn1=SEQUENCE:pubkeyinfo", NULL, 0);
-                writePrivKey2("[pubkeyinfo]", NULL, 0);
-                writePrivKey2("algorithm=SEQUENCE:rsa_alg", NULL, 0);
-                writePrivKey2("pubkey=BITWRAP,SEQUENCE:rsapubkey", NULL, 0);
-                writePrivKey2("[rsa_alg]", NULL, 0);
-                writePrivKey2("algorithm=OID:rsaEncryption", NULL, 0);
-                writePrivKey2("parameter=NULL", NULL, 0);
-                writePrivKey2("[rsapubkey]", NULL, 0);
-                // TODO: Figure out how to determine the offsets to these...
-                // writePrivKey2("n=INTEGER:0x", pstrKey->strRsaKeyInfo.u16NSz);
-                // writePrivKey2("e=INTEGER:0x", pstrKey->strRsaKeyInfo.u16ESz);
             }
 
             printf("\n  <%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
