@@ -4,12 +4,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
+      "label": "build tls_cert_flash_tool",
       "type": "shell",
       "command": "msbuild",
       "args": [
         "${workspaceFolder}/Tools/tls_cert_flash_tool/tls_cert_flash_tool.sln",
-        "/p:Configuration=${input:build-configuration}",
+        // "/p:Configuration=${input:build-configuration}",
+        "/p:Configuration=Debug_UART",
         // Ask msbuild to generate full paths for file names.
         "/property:GenerateFullPaths=true",
         "/t:build",
@@ -31,7 +32,8 @@
       "command": "msbuild",
       "args": [
         "${workspaceFolder}/Tools/crypto_lib/crypto_lib.sln",
-        "/p:Configuration=${input:crypto-build-configuration}",
+        // "/p:Configuration=${input:crypto-build-configuration}",
+        "/p:Configuration=Debug",
         // Ask msbuild to generate full paths for file names.
         "/property:GenerateFullPaths=true",
         "/t:build",

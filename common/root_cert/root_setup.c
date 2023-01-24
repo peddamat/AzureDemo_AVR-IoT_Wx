@@ -61,6 +61,27 @@ INCLUDES
         }                            \
     } while (0)
 
+void writeHexString2(const char *filename, const char *name, uint8 *Buffer, int size) {
+	FILE *fp;
+    int k;
+    uint8 *buf = Buffer;
+
+    fp = fopen(filename,"a+");
+    if(fp != NULL)
+    {
+        fprintf(fp, "%s", name);
+        for (k = 0; k < size; k++) {
+            fprintf(fp, "%02X", buf[k]);
+        }
+        fprintf(fp, "\r\n");
+
+        fclose(fp);
+    }
+}
+
+void writePrivKey2(const char *name, uint8 *Buffer, int size) {
+    writeHexString2("private.asn1", name, Buffer, size);
+}
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 DATA TYPES
@@ -328,10 +349,11 @@ int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash
     return ret;
 }
 
-sint8 RootCertStoreLoad(tenuRootCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8* vflash)
+sint8 RootCertStoreLoad(const char *pcFwFile, uint8 port, uint8* vflash)
 {
-	sint8	ret = M2M_ERR_FAIL;
+    tenuRootCertStoreType enuStore = strcmp(pcFwFile, "") ? ROOT_STORE_FW_IMG : ROOT_STORE_FLASH;
 
+	sint8	ret = M2M_ERR_FAIL;
 	switch(enuStore)
 	{
 	case ROOT_STORE_FLASH:
@@ -345,6 +367,12 @@ sint8 RootCertStoreLoad(tenuRootCertStoreType enuStore, const char *pcFwFile, ui
 	default:
 		break;
 	}
+    if (ret == M2M_SUCCESS) {
+        printf("Root Certificate Store Updated Successfully On: %s\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
+    } else {
+        printf("Root Certificate Store Update FAILED To %s!!!\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
+    }
+
 	return ret;
 }
 
@@ -420,10 +448,11 @@ static sint8 RootCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, const c
 	return s8Ret;
 }
 
-sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8* vflash)
+sint8 RootCertStoreSave(const char *pcFwFile, uint8 port, uint8* vflash)
 {
-	sint8	ret = M2M_ERR_FAIL;
+    tenuRootCertStoreType enuStore = strcmp(pcFwFile, "") ? ROOT_STORE_FW_IMG : ROOT_STORE_FLASH;
 
+	sint8	ret = M2M_ERR_FAIL;
 	switch(enuStore)
 	{
 	case ROOT_STORE_FLASH:
@@ -438,18 +467,16 @@ sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, const char *pcFwFile, ui
 		break;
 	}
 
-	if(ret == M2M_SUCCESS)
-	{
-		printf("TLS Certificate Store Update Success on %s\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
-	}
-	else
-	{
-		printf("TLS Certificate Store Update FAILED !!! on %s\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
-	}
+    if (ret == M2M_SUCCESS) {
+        printf("Root Certificate Store Updated Successfully On: %s\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
+    } else {
+        printf("Root Certificate Store Update FAILED To %s!!!\n", (enuStore == ROOT_STORE_FLASH) ? "Flash" : "Firmware Image");
+    }
+
 	return ret;
 }
 
-int DumpRootCerts(void)
+int DumpRootCerts(const char *outfile)
 {
     uint32                  u32Idx;
     uint8                   bIncrement        = 0;
@@ -470,7 +497,7 @@ int DumpRootCerts(void)
         u32nStoredCerts = pstrRootFlashHdr->u32nCerts;
         bIncrement = 1;
 
-		printf("- Found %i entries!\r\n", u32nStoredCerts);
+		printf("- Found %i entries!\n\n", u32nStoredCerts);
 
         for(u32Idx = 0 ; u32Idx < u32nStoredCerts ; u32Idx ++)
         {
@@ -479,22 +506,33 @@ int DumpRootCerts(void)
 
             if (pstrEntryHdr->strPubKey.u32PubKeyType == 1)
             {
-                printf("\n  Certificate %i: RSA", u32Idx + 1);
+                printf("  Certificate %i: RSA", u32Idx + 1);
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
-                printf("\n  Certificate %i: ECDSA", u32Idx + 1);
+                printf("  Certificate %i: ECDSA", u32Idx + 1);
             }
             else
             {
-                printf("\n  Certificate %i: UNKNOWN!", u32Idx + 1);
+                printf("  Certificate %i: UNKNOWN!", u32Idx + 1);
             }
 
             K_DUMP("\n  Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
-            // for (int i = 0; i < CRYPTO_SHA1_DIGEST_SIZE; i++)
-            // {
-                // printf("%i ", pstrEntryHdr->au8SHA1NameHash[i]);
-            // }
+
+            if (strcmp(outfile, "") != 0) {
+                writePrivKey2("asn1=SEQUENCE:pubkeyinfo", NULL, 0);
+                writePrivKey2("[pubkeyinfo]", NULL, 0);
+                writePrivKey2("algorithm=SEQUENCE:rsa_alg", NULL, 0);
+                writePrivKey2("pubkey=BITWRAP,SEQUENCE:rsapubkey", NULL, 0);
+                writePrivKey2("[rsa_alg]", NULL, 0);
+                writePrivKey2("algorithm=OID:rsaEncryption", NULL, 0);
+                writePrivKey2("parameter=NULL", NULL, 0);
+                writePrivKey2("[rsapubkey]", NULL, 0);
+                // TODO: Figure out how to determine the offsets to these...
+                // writePrivKey2("n=INTEGER:0x", pstrKey->strRsaKeyInfo.u16NSz);
+                // writePrivKey2("e=INTEGER:0x", pstrKey->strRsaKeyInfo.u16ESz);
+            }
+
             printf("\n  <%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
                 pstrEntryHdr->strStartDate.u16Year, pstrEntryHdr->strStartDate.u8Month, pstrEntryHdr->strStartDate.u8Day, \
 				pstrEntryHdr->strStartDate.u8Hour, pstrEntryHdr->strStartDate.u8Minute, pstrEntryHdr->strStartDate.u8Second, \

@@ -116,9 +116,10 @@ static sint8 TlsCertStoreLoadFromFwImage(const char *pcFwFile) {
     return s8Ret;
 }
 
-sint8 TlsCertStoreLoad(tenuTLSCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8 *vflash) {
-    sint8 ret = M2M_ERR_FAIL;
+sint8 TlsCertStoreLoad(const char *pcFwFile, uint8 port, uint8 *vflash) {
+    tenuTLSCertStoreType enuStore = strcmp(pcFwFile, "") ? TLS_STORE_FW_IMG : TLS_STORE_FLASH;
 
+    sint8 ret = M2M_ERR_FAIL;
     switch (enuStore) {
         case TLS_STORE_FLASH:
             ret = TlsCertStoreLoadFromFlash(port);
@@ -131,6 +132,13 @@ sint8 TlsCertStoreLoad(tenuTLSCertStoreType enuStore, const char *pcFwFile, uint
         default:
             break;
     }
+
+    if (ret == M2M_SUCCESS) {
+        printf("TLS Certificate Store Loaded Successfully From: %s\n", (enuStore == TLS_STORE_FLASH) ? "Flash" : "Firmware Image");
+    } else {
+        printf("TLS Certificate Store Load FAILED From %s!!!\n", (enuStore == TLS_STORE_FLASH) ? "Flash" : "Firmware Image");
+    }
+
     return ret;
 }
 
@@ -171,9 +179,10 @@ static sint8 TlsCertStoreSaveToFwImage(uint8 *pu8TlsSrvFlashSecContent, const ch
     return s8Ret;
 }
 
-static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFile, uint8 port, uint8 *vflash) {
-    sint8 ret = M2M_ERR_FAIL;
+static sint8 TlsCertStoreSave(const char *pcFwFile, uint8 port, uint8 *vflash) {
+    tenuTLSCertStoreType enuStore = strcmp(pcFwFile, "") ? TLS_STORE_FW_IMG : TLS_STORE_FLASH;
 
+    sint8 ret = M2M_ERR_FAIL;
     switch (enuStore) {
         case TLS_STORE_FLASH:
             ret = TlsCertStoreSaveToFlash(gau8TlsSrvSec, port, vflash);
@@ -188,10 +197,11 @@ static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFil
     }
 
     if (ret == M2M_SUCCESS) {
-        printf("TLS Certificate Store Update Success on %s\n", (enuStore == TLS_STORE_FLASH) ? "Flash" : "Firmware Image");
+        printf("TLS Certificate Store Updated Successfully On: %s\n", (enuStore == TLS_STORE_FLASH) ? "Flash" : "Firmware Image");
     } else {
-        printf("TLS Certificate Store Update FAILED !!! on %s\n", (enuStore == TLS_STORE_FLASH) ? "Flash" : "Firmware Image");
+        printf("TLS Certificate Store Update FAILED To %s!!!\n", (enuStore == TLS_STORE_FLASH) ? "Flash" : "Firmware Image");
     }
+
     return ret;
 }
 
@@ -199,14 +209,13 @@ static sint8 TlsCertStoreSave(tenuTLSCertStoreType enuStore, const char *pcFwFil
 READ COMMAND
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-int HandleReadCmd(const char *fwImg, const char *outfile, int verbose) {
+int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port) {
     int ret = M2M_ERR_FAIL;
 
     printf("Dumping TLS Store contents...\n");
-    if((ret = TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS)) {
+    if((ret = TlsCertStoreLoad(fwImg, port, NULL) != M2M_SUCCESS)) {
         return ret;
     }
-    printf("- TLS Store loaded...\n");
 
     printf("- Parsing TLS Store...\n");
     TlsSrvSecReadInit(gau8TlsSrvSec);
@@ -214,9 +223,7 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose) {
     TlsSrvSecDumpContents(1, 1, 1, 1, 1, outfile, verbose);
 
     printf("\nDumping Root Cert Store contents...\n");
-
-    // Dump Root Cert Store Contents
-    ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+    ret = RootCertStoreLoad(fwImg, port, NULL);
     if (ret != M2M_SUCCESS) {
         return ret;
     }
@@ -332,12 +339,13 @@ MAIN
 int main(int argc, char **argv) {
 	// Read Command Setup
     struct arg_rex *read_cmd = arg_rex1(NULL, NULL, "read", NULL, REG_ICASE, NULL);
-    struct arg_file *infiles1 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_file *infiles1 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile1 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
+    struct arg_int *port1 = arg_int0("p", "port", "<COM Port>", "COM Port");
     struct arg_lit *verbose1  = arg_lit0("v", "verbose", "Output more details");
     struct arg_lit *help1 = arg_lit0("h", "help", "Show help");
     struct arg_end *end1 = arg_end(20);
-    void *argtable1[] = {read_cmd, infiles1, outfile1, verbose1, help1, end1};
+    void *argtable1[] = {read_cmd, infiles1, outfile1, verbose1, port1, help1, end1};
     int nerrors1;
 
 	// Update Command Setup
@@ -378,12 +386,15 @@ int main(int argc, char **argv) {
         goto __EXIT;
     }
 
+    // Set default values...
+    port1->ival[0] = 0;
+
     nerrors1 = arg_parse(argc, argv, argtable1);
     nerrors2 = arg_parse(argc, argv, argtable2);
     nerrors3 = arg_parse(argc, argv, argtable3);
 
     if (nerrors1 == 0) {
-        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count);
+        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count, port1->ival[0]);
     } else if (nerrors2 == 0) {
         exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose2->count);
     } else if (nerrors3 == 0) {

@@ -24,8 +24,8 @@ typedef enum{
 */
 int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash);
 
-sint8 RootCertStoreSave(tenuRootCertStoreType enuStore, const char* pcFwFile, uint8 port, uint8* vflash);
-sint8 RootCertStoreLoad(tenuRootCertStoreType enuStore, const char* pcFwFile, uint8 port, uint8* vflash);
+sint8 RootCertStoreSave(const char* pcFwFile, uint8 port, uint8* vflash);
+sint8 RootCertStoreLoad(const char* pcFwFile, uint8 port, uint8* vflash);
 static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum);
 sint8 RootCertStoreLoadFromFwImage(const char* pcFwFile);
 int InitializeMemory(void);

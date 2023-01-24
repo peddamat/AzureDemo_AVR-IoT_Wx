@@ -3,16 +3,28 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}\\**"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
-                "_UNICODE"
+                "_UNICODE",
+                "WIN32",
+                "CONF_WINC_USE_UART",
+                "CONF_WINC_DEBUG"
             ],
             "windowsSdkVersion": "10.0.20348.0",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
-            "configurationProvider": "ms-vscode.makefile-tools"
+            "intelliSenseMode": "windows-msvc-x64",
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "mergeConfigurations": false,
+            "browse": {
+                "path": [
+                    "${workspaceFolder}\\**"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            }
         },
         {
             "name": "Posix",
@@ -39,7 +51,7 @@
                 "path": [
                     "${workspaceFolder}/**"
                 ],
-                "limitSymbolsToIncludedHeaders": true
+                "limitSymbolsToIncludedHeaders": false
             }
         }
     ],
