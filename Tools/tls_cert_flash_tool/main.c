@@ -84,6 +84,7 @@ typedef enum {
 GLOBALS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
+static uint8 gauFirmware[FLASH_4M_TOTAL_SZ];
 static uint8 gau8TlsSrvSec[M2M_TLS_SERVER_FLASH_SIZE];
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
@@ -289,12 +290,67 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
     return ret;
 }
 
-int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase, int verbose) {
+int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase, int verbose, int port) {
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
     ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
+
+    return ret;
+}
+
+/*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+WRITE COMMAND
+*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+
+static sint8 LoadFirmware(const char *pcFwFile) {
+    FILE *fp;
+    sint8 s8Ret = M2M_ERR_FAIL;
+
+    fp = fopen(pcFwFile, "rb");
+    if (fp) {
+        fread(gauFirmware, 1, sizeof(gauFirmware), fp);
+        fclose(fp);
+        s8Ret = M2M_SUCCESS;
+    } else {
+        printf("* Error opening firmware file: <%s>\n", pcFwFile);
+    }
+    return s8Ret;
+}
+
+static sint8 WriteFirmware(uint8 *pu8firmware, uint8 u8PortNum) {
+    sint8 s8Ret = M2M_ERR_FAIL;
+
+    if (programmer_init(&u8PortNum, 0) == M2M_SUCCESS) {
+        // dump_flash("Before_tls.bin");
+
+        if (programmer_erase(0, sizeof(gauFirmware), NULL) == M2M_SUCCESS) {
+            s8Ret = programmer_write(&gauFirmware, 0, sizeof(gauFirmware), NULL);
+        }
+
+        // dump_flash("After_tls.bin");
+
+        programmer_deinit();
+    }
+    return s8Ret;
+}
+
+int HandleWriteCmd(const char *fwImg, int port) {
+    int ret = M2M_ERR_FAIL;
+    printf("Writing firmware to device...\n");
+
+    printf("- Reading firmware from disk...\n");
+    if((ret = LoadFirmware(fwImg, port, NULL) != M2M_SUCCESS)) {
+        printf("error reading!\n");
+        return ret;
+    }
+
+    printf("- Writing firmware to device...\n");
+    if((ret = WriteFirmware(fwImg, port) != M2M_SUCCESS)) {
+        printf("error writing!\n");
+        return ret;
+    }
 
     return ret;
 }
@@ -337,41 +393,41 @@ MAIN
 #define REG_ICASE (REG_EXTENDED << 1)
 
 int main(int argc, char **argv) {
+    // Default Arguments
+    struct arg_file *infiles = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_file *outfile = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
+    struct arg_int *port = arg_int0("p", "port", "<COM Port>", "COM Port");
+    struct arg_lit *verbose  = arg_lit0("v", "verbose", "Output more details");
+    struct arg_lit *help = arg_lit0("h", "help", "Show help");
+    struct arg_end *end = arg_end(20);
+
 	// Read Command Setup
     struct arg_rex *read_cmd = arg_rex1(NULL, NULL, "read", NULL, REG_ICASE, NULL);
-    struct arg_file *infiles1 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
-    struct arg_file *outfile1 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
-    struct arg_int *port1 = arg_int0("p", "port", "<COM Port>", "COM Port");
-    struct arg_lit *verbose1  = arg_lit0("v", "verbose", "Output more details");
-    struct arg_lit *help1 = arg_lit0("h", "help", "Show help");
-    struct arg_end *end1 = arg_end(20);
-    void *argtable1[] = {read_cmd, infiles1, outfile1, verbose1, port1, help1, end1};
+    void *argtable1[] = {read_cmd, infiles, outfile, verbose, port, help, end};
     int nerrors1;
 
 	// Update Command Setup
     struct arg_rex *update_cmd = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
-    struct arg_file *infiles2 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
-    struct arg_file *outfile2 = arg_file0("o", NULL, "<output>", "output file (default is \"-\")");
     struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
     struct arg_file *cert = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
     struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
     struct arg_file *ca_dir = arg_file0(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
     struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
-    struct arg_lit *verbose2  = arg_lit0("v", "verbose", "Output more details");
-    struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
-    struct arg_end *end2 = arg_end(20);
-    void *argtable2[] = {update_cmd, infiles2, outfile2, key, cert, pf_bin, ca_dir, erase, verbose2, help2, end2};
+    void *argtable2[] = {update_cmd, infiles, outfile, key, cert, pf_bin, ca_dir, erase, verbose, port, help, end};
     int nerrors2;
 
 	// Erase Command Setup
     struct arg_rex *erase_cmd = arg_rex1(NULL, NULL, "erase", NULL, REG_ICASE, NULL);
-    struct arg_file *infiles3 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
-    struct arg_file *outfile3 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
     struct arg_lit *erase_all = arg_lit0("a", "all", "Erase TLS and Root Cert Stores");
-    struct arg_lit *help3 = arg_lit0("h", "help", "Show help");
-    struct arg_end *end3 = arg_end(20);
-    void *argtable3[] = {erase_cmd, infiles3, outfile3, erase_all, help3, end3};
+    void *argtable3[] = {erase_cmd, infiles, outfile, erase_all, port, help, end};
     int nerrors3;
+
+	// Write Command Setup
+    struct arg_rex *write_cmd = arg_rex1(NULL, NULL, "write", NULL, REG_ICASE, NULL);
+    struct arg_file *infiles1 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    void *argtable4[] = {write_cmd, infiles1, port, help, end};
+    int nerrors4;
+
 
     const char *progname = "atwin1500_fwtool.exe";
     int exitcode = 0;
@@ -379,7 +435,8 @@ int main(int argc, char **argv) {
     /* verify all argtable[] entries were allocated sucessfully */
     if (arg_nullcheck(argtable1) != 0 ||
         arg_nullcheck(argtable2) != 0 ||
-        arg_nullcheck(argtable3) != 0) {
+        arg_nullcheck(argtable3) != 0 ||
+        arg_nullcheck(argtable4) != 0) {
         /* NULL entries were detected, some allocations must have failed */
         printf("%s: insufficient memory\n", progname);
         exitcode = 1;
@@ -387,25 +444,23 @@ int main(int argc, char **argv) {
     }
 
     // Set default values...
-    port1->ival[0] = 0;
+    port->ival[0] = 0;
 
-    nerrors1 = arg_parse(argc, argv, argtable1);
-    nerrors2 = arg_parse(argc, argv, argtable2);
-    nerrors3 = arg_parse(argc, argv, argtable3);
-
-    if (nerrors1 == 0) {
-        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count, port1->ival[0]);
-    } else if (nerrors2 == 0) {
-        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose2->count);
-    } else if (nerrors3 == 0) {
-        exitcode = HandleEraseCmd(infiles3->filename[0], erase_all->count);
+    if (arg_parse(argc, argv, argtable1) == 0) {
+        exitcode = HandleReadCmd(infiles->filename[0], outfile->filename[0], verbose->count, port->ival[0]);
+    } else if (arg_parse(argc, argv, argtable2) == 0) {
+        exitcode = HandleUpdateCmd(infiles->filename[0], outfile->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose->count, port->ival[0]);
+    } else if (arg_parse(argc, argv, argtable3) == 0) {
+        exitcode = HandleEraseCmd(infiles->filename[0], erase_all->count);
+    } else if (arg_parse(argc, argv, argtable4) == 0) {
+        exitcode = HandleWriteCmd(infiles1->filename[0], port->ival[0]);
     } else {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
 
-            if (help1->count) {
+            if (help->count) {
                 printf("\nRead X.509 Certificate chain from WINC Device Flash or a given WINC firmware image file\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable1, "  %-25s %s\n");
@@ -417,12 +472,12 @@ int main(int argc, char **argv) {
                 printf("  %s read -rsa -ecdsa -dir-fwimg m2m_aio_3a0.bin\n", progname);
                 goto __EXIT;
             }
-            arg_print_errors(stdout, end1, "- error");
+            arg_print_errors(stdout, end, "- error");
         } else if (update_cmd->count > 0) {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable2, "\n");
 
-            if (help2->count) {
+            if (help->count) {
                 printf("\nWrite X.509 Certificate chain on WINC Device Flash or a given WINC firmware image file\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable2, "  %-25s %s\n");
@@ -434,7 +489,7 @@ int main(int argc, char **argv) {
                 printf("  %s update -key rsa.key -cert rsa.cer -fwimg m2m_aio_3a0.bin\n", progname);
                 goto __EXIT;
             }
-            arg_print_errors(stdout, end2, "- error");
+            arg_print_errors(stdout, end, "- error");
         } else {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
