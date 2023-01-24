@@ -229,7 +229,7 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
         return ret;
     }
 
-    DumpRootCerts();
+    DumpRootCerts(outfile);
 
     return 0;
 }

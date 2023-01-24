@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
-    <LocalDebuggerCommandArguments>read atwinc1500.bin</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>read atwinc1500.bin -o output</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>..\Debug_UART</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

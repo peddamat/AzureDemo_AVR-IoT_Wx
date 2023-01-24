@@ -487,7 +487,7 @@ sint8 RootCertStoreSave(const char *pcFwFile, uint8 port, uint8* vflash)
 	return ret;
 }
 
-int DumpRootCerts(const char *outfile)
+int DumpRootCerts(const char *pcOutPath)
 {
     uint32                  u32Idx;
     uint8                   bIncrement        = 0;
@@ -498,6 +498,9 @@ int DumpRootCerts(const char *outfile)
     tstrRootCertEntryHeader *pstrEntryHdr;
     uint16                  u16Offset;
     tstrRootCertPubKeyInfo  *pstrKey;
+
+    char acFileName[324];
+
 
     // Points to the very top of the Root Cert Store memory
     pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);
@@ -525,28 +528,28 @@ int DumpRootCerts(const char *outfile)
                 uint8 *pu8N = &gau8RootCertMem[u16Offset+ sizeof(tstrRootCertEntryHeader)];
                 uint8 *pu8E = pu8N + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz);
 
-                // if (strcmp(outfile, "") != 0) {
-                    writeHexString2("public.sh", "openssl asn1parse -genconf public.asn1 -out public.der -noout", NULL, 0);
-                    writeHexString2("public.sh", "openssl pkey -pubin -in public.der -inform DER -text -noout", NULL, 0);
-                    writePrivKey2("asn1=SEQUENCE:pubkeyinfo", NULL, 0);
-                    writePrivKey2("[pubkeyinfo]", NULL, 0);
-                    writePrivKey2("algorithm=SEQUENCE:rsa_alg", NULL, 0);
-                    writePrivKey2("pubkey=BITWRAP,SEQUENCE:rsapubkey", NULL, 0);
-                    writePrivKey2("[rsa_alg]", NULL, 0);
-                    writePrivKey2("algorithm=OID:rsaEncryption", NULL, 0);
-                    writePrivKey2("parameter=NULL", NULL, 0);
-                    writePrivKey2("[rsapubkey]", NULL, 0);
-                    // TODO: Figure out how to determine the offsets to these...
-                    writePrivKey2("n=INTEGER:0x", pu8N, pstrKey->strRsaKeyInfo.u16NSz);
-                    writePrivKey2("e=INTEGER:0x", pu8E, pstrKey->strRsaKeyInfo.u16ESz);
-                // }
+                if (strcmp(pcOutPath, "") != 0) {
+                    snprintf(acFileName, sizeof(acFileName), "%s/%s-%i.asn1", pcOutPath, "public-rsa-cert", u32Idx+1);
+                    writeHexString2("public-rsa.sh", "openssl asn1parse -genconf public.asn1 -out public.der -noout", NULL, 0);
+                    writeHexString2("public-rsa.sh", "openssl pkey -pubin -in public.der -inform DER -text -noout", NULL, 0);
+                    writeHexString2(acFileName, "asn1=SEQUENCE:pubkeyinfo", NULL, 0);
+                    writeHexString2(acFileName, "[pubkeyinfo]", NULL, 0);
+                    writeHexString2(acFileName, "algorithm=SEQUENCE:rsa_alg", NULL, 0);
+                    writeHexString2(acFileName, "pubkey=BITWRAP,SEQUENCE:rsapubkey", NULL, 0);
+                    writeHexString2(acFileName, "[rsa_alg]", NULL, 0);
+                    writeHexString2(acFileName, "algorithm=OID:rsaEncryption", NULL, 0);
+                    writeHexString2(acFileName, "parameter=NULL", NULL, 0);
+                    writeHexString2(acFileName, "[rsapubkey]", NULL, 0);
+                    writeHexString2(acFileName, "n=INTEGER:0x", pu8N, pstrKey->strRsaKeyInfo.u16NSz);
+                    writeHexString2(acFileName, "e=INTEGER:0x", pu8E, pstrKey->strRsaKeyInfo.u16ESz);
+                }
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
                 printf("  Certificate %i: ECDSA", u32Idx + 1);
                 uint8 *pu8Key = pstrEntryHdr + sizeof(tstrRootCertEntryHeader);
 
-                // if (strcmp(outfile, "") != 0) {
+                // if (strcmp(pcOutPath, "") != 0) {
                     // TODO: Figure out how to determine the offsets to these...
                     M2M_DUMP_BUF("key=INTEGER:0x", pu8Key, pstrKey->strEcsdaKeyInfo.u16KeySz);
                 // }
