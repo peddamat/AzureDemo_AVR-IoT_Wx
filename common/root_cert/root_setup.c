@@ -299,8 +299,7 @@ static sint8 UpdateRootList(txtrX509CertInfo *pstrRootCert)
     else
     {
         // Initialize the store since it's empty...
-        pstrRootFlashHdr->u32nCerts = 0;
-        m2m_memcpy(pstrRootFlashHdr->au8StartPattern, au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH);
+        InitializeRootCertStore();
         bIncrement = 1;
     }
 
@@ -319,6 +318,15 @@ static sint8 UpdateRootList(txtrX509CertInfo *pstrRootCert)
         pstrRootFlashHdr->u32nCerts ++;
     }
     return 0;
+}
+
+void InitializeRootCertStore()
+{
+    uint8 au8StartPattern[] = ROOT_CERT_FLASH_START_PATTERN;
+    memset(gau8RootCertMem, 0xFF, M2M_TLS_ROOTCER_FLASH_SIZE);
+    tstrRootCertFlashHeader *pstrRootFlashHdr = (tstrRootCertFlashHeader*)gau8RootCertMem;
+    m2m_memcpy(pstrRootFlashHdr->au8StartPattern, au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH);
+    pstrRootFlashHdr->u32nCerts = 0;
 }
 
 /************************************************/

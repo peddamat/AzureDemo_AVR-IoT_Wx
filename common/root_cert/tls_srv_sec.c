@@ -497,11 +497,7 @@ sint8 TlsSrvSecWriteCertChain(uint8 *pu8PrivKey, uint32 u32PrivKeySz, tstrFileIn
     if ((pu8TlsSrvSecBuff != NULL) && (pstrCertChain != NULL)) {
         /* Initialize the write operation */
         if (enuMode == TLS_SRV_SEC_MODE_WRITE) {
-            memset(pu8TlsSrvSecBuff, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
-            gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)pu8TlsSrvSecBuff;
-            memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
-            gpstrTlsSrvSecHdr->u32nEntries = 0;
-            gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
+            InitializeTlsStore(pu8TlsSrvSecBuff, au8Pattern);
         } else if (enuMode == TLS_SRV_SEC_MODE_APPEND) {
             if (!memcmp(pu8TlsSrvSecBuff, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
                 gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)pu8TlsSrvSecBuff;
@@ -517,6 +513,15 @@ sint8 TlsSrvSecWriteCertChain(uint8 *pu8PrivKey, uint32 u32PrivKeySz, tstrFileIn
     }
 __ERR:
     return ret;
+}
+
+void InitializeTlsStore(uint8* pu8TlsSrvSecBuff, uint8  au8Pattern[8])
+{
+    memset(pu8TlsSrvSecBuff, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
+    gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr*)pu8TlsSrvSecBuff;
+    memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
+    gpstrTlsSrvSecHdr->u32nEntries = 0;
+    gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
 }
 
 /**************************************************************/

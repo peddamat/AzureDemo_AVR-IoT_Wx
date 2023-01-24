@@ -77,8 +77,9 @@ FUNCTION PROTOTYPES
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 sint8 TlsSrvSecWriteCertChain(uint8 *pu8PrivKey, uint32 u32PrivKeySz, tstrFileInfo *pstrCertChain, uint8 u8ChainDepth, uint8 *pu8TlsSrvSecBuff, uint32 *pu32SecSz, tenuWriteMode enuMode);
+void InitializeTlsStore(uint8* pu8TlsSrvSecBuff, uint8  au8Pattern[8]);
 sint8 TlsSrvSecReadInit(uint8 *pu8TlsSrvSec);
 sint8 TlsSrvSecReadDeinit(void);
 sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKey, uint8 bDumpWholeChain, uint8 bListFiles, const char *pcOutPath, int verbose);
-
+void InitializeTlsStore(uint8* pu8TlsSrvSecBuff, uint8  au8Pattern[8]);
 #endif

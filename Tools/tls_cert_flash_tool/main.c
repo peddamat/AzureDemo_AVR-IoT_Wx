@@ -151,13 +151,10 @@ static sint8 TlsCertStoreSaveToFlash(uint8 *pu8TlsSrvFlashSecContent, uint8 u8Po
     sint8 s8Ret = M2M_ERR_FAIL;
 
     if (programmer_init(&u8PortNum, 0) == M2M_SUCCESS) {
-        // dump_flash("Before_tls.bin");
 
         if (programmer_erase(M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE, NULL) == M2M_SUCCESS) {
             s8Ret = programmer_write(pu8TlsSrvFlashSecContent, M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE, NULL);
         }
-
-        // dump_flash("After_tls.bin");
 
         programmer_deinit();
     }
@@ -372,30 +369,27 @@ int HandleWriteCmd(const char *fwImg, int port) {
 ERASE COMMAND
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-int EraseBuffer(const char *fwImg) {
-    FILE *fp;
+int HandleEraseCmd(const char *fwImg, int tls, int root, int port) {
     sint8 ret = M2M_ERR_FAIL;
     uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
-    // Clear TLS Cert Store buffer
-    memset(&gau8TlsSrvSec, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
-    tstrTlsSrvSecHdr *gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)gau8TlsSrvSec;
-    memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
-    gpstrTlsSrvSecHdr->u32nEntries = 0;
-    gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
+    printf("Erasing device...\n");
 
-    ret = TlsCertStoreSaveToFwImage(&gau8TlsSrvSec, fwImg);
+    if (port == 0) {
+        port = detect_com_port();
+    }
 
-    ret = RootCertStoreLoadFromFwImage(fwImg);
-    InitializeMemory();
-    ret = RootCertStoreSave(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+    if (tls) {
+        InitializeTlsStore(&gau8TlsSrvSec, au8Pattern);
+		ret = TlsCertStoreSave(fwImg, port, NULL);
+    }
+
+    if (root) {
+        InitializeRootCertStore();
+        ret = RootCertStoreSave(fwImg, port, NULL);
+    }
 
     return ret;
-}
-
-int HandleEraseCmd(const char *fwImg, int all) {
-    EraseBuffer(fwImg);
-    return 0;
 }
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
@@ -407,7 +401,6 @@ MAIN
 
 int main(int argc, char **argv) {
     // Default Arguments
-    struct arg_file *infiles = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
     struct arg_int *port = arg_int0("p", "port", "<COM Port>", "COM Port");
     struct arg_lit *verbose  = arg_lit0("v", "verbose", "Output more details");
@@ -416,29 +409,33 @@ int main(int argc, char **argv) {
 
 	// Read Command Setup
     struct arg_rex *read_cmd = arg_rex1(NULL, NULL, "read", NULL, REG_ICASE, NULL);
-    void *argtable1[] = {read_cmd, infiles, outfile, verbose, port, help, end};
+    struct arg_file *infiles1 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
+    void *argtable1[] = {read_cmd, infiles1, outfile, verbose, port, help, end};
     int nerrors1;
 
 	// Update Command Setup
     struct arg_rex *update_cmd = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
+    struct arg_file *infiles2 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
     struct arg_file *cert = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
     struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
     struct arg_file *ca_dir = arg_file0(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
     struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
-    void *argtable2[] = {update_cmd, infiles, outfile, key, cert, pf_bin, ca_dir, erase, verbose, port, help, end};
+    void *argtable2[] = {update_cmd, infiles2, outfile, key, cert, pf_bin, ca_dir, erase, verbose, port, help, end};
     int nerrors2;
 
 	// Erase Command Setup
     struct arg_rex *erase_cmd = arg_rex1(NULL, NULL, "erase", NULL, REG_ICASE, NULL);
-    struct arg_lit *erase_all = arg_lit0("a", "all", "Erase TLS and Root Cert Stores");
-    void *argtable3[] = {erase_cmd, infiles, outfile, erase_all, port, help, end};
+    struct arg_file *infiles3 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_lit *erase_tls = arg_lit0("t", "tls", "Erase TLS Store");
+    struct arg_lit *erase_root = arg_lit0("r", "root", "Erase Root Store");
+    void *argtable3[] = {erase_cmd, infiles3, outfile, erase_tls, erase_root, port, help, end};
     int nerrors3;
 
 	// Write Command Setup
     struct arg_rex *write_cmd = arg_rex1(NULL, NULL, "write", NULL, REG_ICASE, NULL);
-    struct arg_file *infiles1 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
-    void *argtable4[] = {write_cmd, infiles1, port, help, end};
+    struct arg_file *infiles4 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    void *argtable4[] = {write_cmd, infiles4, port, help, end};
     int nerrors4;
 
 
@@ -460,13 +457,13 @@ int main(int argc, char **argv) {
     port->ival[0] = 0;
 
     if (arg_parse(argc, argv, argtable1) == 0) {
-        exitcode = HandleReadCmd(infiles->filename[0], outfile->filename[0], verbose->count, port->ival[0]);
+        exitcode = HandleReadCmd(infiles1->filename[0], outfile->filename[0], verbose->count, port->ival[0]);
     } else if (arg_parse(argc, argv, argtable2) == 0) {
-        exitcode = HandleUpdateCmd(infiles->filename[0], outfile->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose->count, port->ival[0]);
+        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose->count, port->ival[0]);
     } else if (arg_parse(argc, argv, argtable3) == 0) {
-        exitcode = HandleEraseCmd(infiles->filename[0], erase_all->count);
+        exitcode = HandleEraseCmd(infiles3->filename[0], erase_tls->count, erase_root->count, port->ival[0]);
     } else if (arg_parse(argc, argv, argtable4) == 0) {
-        exitcode = HandleWriteCmd(infiles1->filename[0], port->ival[0]);
+        exitcode = HandleWriteCmd(infiles4->filename[0], port->ival[0]);
     } else {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {

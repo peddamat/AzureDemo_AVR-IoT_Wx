@@ -30,4 +30,5 @@ static sint8 RootCertStoreLoadFromFlash(uint8 u8PortNum);
 sint8 RootCertStoreLoadFromFwImage(const char* pcFwFile);
 int InitializeMemory(void);
 int DumpRootCerts(void);
+void InitializeRootCertStore();
 #endif  //__ROOT_CERT_SETUP_H__
