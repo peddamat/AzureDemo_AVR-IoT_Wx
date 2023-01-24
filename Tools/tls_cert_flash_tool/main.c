@@ -214,6 +214,11 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
     int ret = M2M_ERR_FAIL;
 
     printf("Dumping TLS Store contents...\n");
+
+    if (port == 0) {
+        port = detect_com_port();
+    }
+
     if((ret = TlsCertStoreLoad(fwImg, port, NULL) != M2M_SUCCESS)) {
         return ret;
     }
@@ -294,6 +299,10 @@ int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, con
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
+    if (port == 0) {
+        port = detect_com_port();
+    }
+
     ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase);
 
@@ -339,6 +348,10 @@ static sint8 WriteFirmware(uint8 *pu8firmware, uint8 u8PortNum) {
 int HandleWriteCmd(const char *fwImg, int port) {
     int ret = M2M_ERR_FAIL;
     printf("Writing firmware to device...\n");
+
+    if (port == 0) {
+        port = detect_com_port();
+    }
 
     printf("- Reading firmware from disk...\n");
     if((ret = LoadFirmware(fwImg, port, NULL) != M2M_SUCCESS)) {

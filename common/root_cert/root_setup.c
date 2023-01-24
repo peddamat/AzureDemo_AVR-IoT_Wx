@@ -271,8 +271,7 @@ static sint8 UpdateRootList(txtrX509CertInfo *pstrRootCert)
     pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);
     u16Offset        = sizeof(tstrRootCertFlashHeader);
 
-    /* Check if the flash has been written before.
-    */
+    // If the Root Cert store isn't empty...
     if(m2m_memcmp(au8EmptyPattern, pstrRootFlashHdr->au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH) != 0)
     {
         u32nStoredCerts = pstrRootFlashHdr->u32nCerts;
@@ -299,6 +298,7 @@ static sint8 UpdateRootList(txtrX509CertInfo *pstrRootCert)
     }
     else
     {
+        // Initialize the store since it's empty...
         pstrRootFlashHdr->u32nCerts = 0;
         m2m_memcpy(pstrRootFlashHdr->au8StartPattern, au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH);
         bIncrement = 1;
@@ -500,7 +500,6 @@ int DumpRootCerts(const char *pcOutPath)
     tstrRootCertPubKeyInfo  *pstrKey;
 
     char acFileName[324];
-
 
     // Points to the very top of the Root Cert Store memory
     pstrRootFlashHdr = (tstrRootCertFlashHeader*)((void *)gau8RootCertMem);

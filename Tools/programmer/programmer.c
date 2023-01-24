@@ -287,6 +287,20 @@ ERR1:
 	return M2M_ERR_FAIL;
 }
 
+uint8 detect_com_port() // Auto-detect
+{
+	uint8 avail[255] = {0};
+	int navail = nm_bus_port_detect(avail, nm_uart_sync_cmd);
+	if(navail < 1) // No ports available.
+	{
+		return -1;
+	}
+	else if(navail < 2)
+		return avail[0]; // Only one port available. Use it
+	else
+		return 0; // Let user choose COM port
+}
+
 
 /*********************************************/
 /* GLOBAL FUNCTIONS							 */

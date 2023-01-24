@@ -152,4 +152,5 @@ sint8 programmer_read(uint8 *pu8Buf, uint32 u32Offset, uint32 u32Sz);
 */
 sint8 programmer_deinit(void);
 
+uint8 detect_com_port();
 #endif /* __FIRMWARE_PROGRAMMER__ */

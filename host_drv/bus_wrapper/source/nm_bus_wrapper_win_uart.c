@@ -567,10 +567,17 @@ uint8 nm_bus_port_detect(uint8 * avail, tpfCheckPort pfChkPort)
 	int i;
 	int k = 0;
 	
-	printf("Detecting ports...\n");
+	printf("Detecting COM port...\n");
 	nm_uart_get_com_port((uint8*)comports);
 	for(i = 0; (i<255)&&(comports[i][0] != 0); i++)
 	{	
+		// comports[i][2] = 1 enables flow control on the COM port
+		//   without flow control, autodetection fails on my machine, 
+		//   so the below line is a bit of magic...  however, the
+		//   original code always enables flow control if the COM port
+		//   is specified by the user.
+		comports[i][2] = 1;
+
 		ret = nm_bus_init((uint8 *)&comports[i][0]);
 		if(ret != M2M_SUCCESS)
 		{
