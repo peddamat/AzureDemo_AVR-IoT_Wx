@@ -400,28 +400,34 @@ MAIN
 #define REG_ICASE (REG_EXTENDED << 1)
 
 int main(int argc, char **argv) {
-    // Default Arguments
-    struct arg_file *outfile = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
-    struct arg_int *port = arg_int0("p", "port", "<COM Port>", "COM Port");
-    struct arg_lit *verbose  = arg_lit0("v", "verbose", "Output more details");
-    struct arg_lit *help = arg_lit0("h", "help", "Show help");
-    struct arg_end *end = arg_end(20);
 
 	// Read Command Setup
     struct arg_rex *read_cmd = arg_rex1(NULL, NULL, "read", NULL, REG_ICASE, NULL);
     struct arg_file *infiles1 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
-    void *argtable1[] = {read_cmd, infiles1, outfile, verbose, port, help, end};
+    struct arg_file *outfile1 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
+    struct arg_int *port1 = arg_int0("p", "port", "<COM Port>", "COM Port");
+    struct arg_lit *verbose1  = arg_lit0("v", "verbose", "Output more details");
+    struct arg_lit *help1 = arg_lit0("h", "help", "Show help");
+    struct arg_end *end1 = arg_end(20);
+
+    void *argtable1[] = {read_cmd, infiles1, outfile1, verbose1, port1, help1, end1};
     int nerrors1;
 
 	// Update Command Setup
     struct arg_rex *update_cmd = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
     struct arg_file *infiles2 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_file *outfile2 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
     struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
     struct arg_file *cert = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
     struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
     struct arg_file *ca_dir = arg_file0(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
-    struct arg_lit *erase = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
-    void *argtable2[] = {update_cmd, infiles2, outfile, key, cert, pf_bin, ca_dir, erase, verbose, port, help, end};
+    struct arg_lit *erase2 = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
+    struct arg_int *port2 = arg_int0("p", "port", "<COM Port>", "COM Port");
+    struct arg_lit *verbose2  = arg_lit0("v", "verbose", "Output more details");
+    struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
+    struct arg_end *end2 = arg_end(20);
+
+    void *argtable2[] = {update_cmd, infiles2, outfile2, key, cert, pf_bin, ca_dir, erase2, verbose2, port2, help2, end2};
     int nerrors2;
 
 	// Erase Command Setup
@@ -429,13 +435,21 @@ int main(int argc, char **argv) {
     struct arg_file *infiles3 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_lit *erase_tls = arg_lit0("t", "tls", "Erase TLS Store");
     struct arg_lit *erase_root = arg_lit0("r", "root", "Erase Root Store");
-    void *argtable3[] = {erase_cmd, infiles3, outfile, erase_tls, erase_root, port, help, end};
+    struct arg_int *port3 = arg_int0("p", "port", "<COM Port>", "COM Port");
+    struct arg_lit *help3 = arg_lit0("h", "help", "Show help");
+    struct arg_end *end3 = arg_end(20);
+
+    void *argtable3[] = {erase_cmd, infiles3, erase_tls, erase_root, port3, help3, end3};
     int nerrors3;
 
 	// Write Command Setup
     struct arg_rex *write_cmd = arg_rex1(NULL, NULL, "write", NULL, REG_ICASE, NULL);
     struct arg_file *infiles4 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
-    void *argtable4[] = {write_cmd, infiles4, port, help, end};
+    struct arg_int *port4 = arg_int0("p", "port", "<COM Port>", "COM Port");
+    struct arg_lit *help4 = arg_lit0("h", "help", "Show help");
+    struct arg_end *end4 = arg_end(20);
+
+    void *argtable4[] = {write_cmd, infiles4, port4, help4, end4};
     int nerrors4;
 
 
@@ -454,23 +468,26 @@ int main(int argc, char **argv) {
     }
 
     // Set default values...
-    port->ival[0] = 0;
+    port1->ival[0] = 0;
+    port2->ival[0] = 0;
+    port3->ival[0] = 0;
+    port4->ival[0] = 0;
 
     if (arg_parse(argc, argv, argtable1) == 0) {
-        exitcode = HandleReadCmd(infiles1->filename[0], outfile->filename[0], verbose->count, port->ival[0]);
+        exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count, port1->ival[0]);
     } else if (arg_parse(argc, argv, argtable2) == 0) {
-        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase->count, verbose->count, port->ival[0]);
+        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase2->count, verbose2->count, port2->ival[0]);
     } else if (arg_parse(argc, argv, argtable3) == 0) {
-        exitcode = HandleEraseCmd(infiles3->filename[0], erase_tls->count, erase_root->count, port->ival[0]);
+        exitcode = HandleEraseCmd(infiles3->filename[0], erase_tls->count, erase_root->count, port3->ival[0]);
     } else if (arg_parse(argc, argv, argtable4) == 0) {
-        exitcode = HandleWriteCmd(infiles4->filename[0], port->ival[0]);
+        exitcode = HandleWriteCmd(infiles4->filename[0], port4->ival[0]);
     } else {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
 
-            if (help->count) {
+            if (help1->count) {
                 printf("\nRead X.509 Certificate chain from WINC Device Flash or a given WINC firmware image file\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable1, "  %-25s %s\n");
@@ -482,12 +499,12 @@ int main(int argc, char **argv) {
                 printf("  %s read -rsa -ecdsa -dir-fwimg m2m_aio_3a0.bin\n", progname);
                 goto __EXIT;
             }
-            arg_print_errors(stdout, end, "- error");
+            arg_print_errors(stdout, end1, "- error");
         } else if (update_cmd->count > 0) {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable2, "\n");
 
-            if (help->count) {
+            if (help1->count) {
                 printf("\nWrite X.509 Certificate chain on WINC Device Flash or a given WINC firmware image file\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable2, "  %-25s %s\n");
@@ -499,7 +516,7 @@ int main(int argc, char **argv) {
                 printf("  %s update -key rsa.key -cert rsa.cer -fwimg m2m_aio_3a0.bin\n", progname);
                 goto __EXIT;
             }
-            arg_print_errors(stdout, end, "- error");
+            arg_print_errors(stdout, end2, "- error");
         } else {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
@@ -507,6 +524,9 @@ int main(int argc, char **argv) {
             arg_print_syntax(stdout, argtable2, "\n");
             printf("       %s ", progname);
             arg_print_syntax(stdout, argtable3, "\n\n");
+            printf("       %s ", progname);
+            arg_print_syntax(stdout, argtable4, "\n\n");
+
             printf("For a specific command help, use <%s <CMD> --help>\n\n", progname);
         }
     }
@@ -515,6 +535,7 @@ __EXIT:
     arg_freetable(argtable1, sizeof(argtable1) / sizeof(argtable1[0]));
     arg_freetable(argtable2, sizeof(argtable2) / sizeof(argtable2[0]));
     arg_freetable(argtable3, sizeof(argtable3) / sizeof(argtable3[0]));
+    arg_freetable(argtable4, sizeof(argtable4) / sizeof(argtable4[0]));
 
     return exitcode;
 }
