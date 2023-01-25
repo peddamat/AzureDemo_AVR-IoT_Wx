@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
-    <LocalDebuggerCommandArguments>erase -p12 -t</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>update --key=..\aws-iot-certs\adafeathermqtt.private.key -p12 --cert=..\aws-iot-certs\adafeathermqtt.cert.pem --ca_dir=..\aws-iot-certs\RootCA</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>..\Debug_UART</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

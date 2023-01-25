@@ -212,9 +212,7 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
 
     printf("Dumping TLS Store contents...\n");
 
-    if (port == 0) {
-        port = detect_com_port();
-    }
+    port = GetPortIfNeeded(fwImg, port);
 
     if((ret = TlsCertStoreLoad(fwImg, port, NULL) != M2M_SUCCESS)) {
         return ret;
@@ -240,11 +238,11 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
 UPDATE COMMAND
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
-int UpdateTlsStore(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, tenuWriteMode enuMode) {
+int UpdateTlsStore(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, tenuWriteMode enuMode, int port) {
     int ret = M2M_ERR_FAIL;
     uint32 u32TlsSrvSecSz;
 
-    if (TlsCertStoreLoad(TLS_STORE_FW_IMG, fwImg, 0, NULL) != M2M_SUCCESS) {
+    if((ret = TlsCertStoreLoad(fwImg, port, NULL) != M2M_SUCCESS)) {
         return ret;
     }
 
@@ -252,12 +250,12 @@ int UpdateTlsStore(const char *fwImg, const char *outfile, const char *key, cons
     if (ret == M2M_SUCCESS) {
         // Write the TLS Certificate Section buffer to the chosen destination,
         // either to the firmware image or the WINC stacked flash directly.
-        ret = TlsCertStoreSave(TLS_STORE_FW_IMG, fwImg, 0, NULL);
+        ret = TlsCertStoreSave(fwImg, port, NULL);
     }
     return ret;
 }
 
-int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
+int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase, int port) {
     int ret = M2M_ERR_FAIL;
     uint32 u32Idx;
     uint32 u32nCerts;
@@ -265,8 +263,7 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
     uint8 *pu8RootCert;
     char **ppCertNames;
 
-    ret = RootCertStoreLoad(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
-    if (ret != M2M_SUCCESS) {
+    if((ret = RootCertStoreLoad(fwImg, port, NULL) != M2M_SUCCESS)) {
         return ret;
     }
 
@@ -284,7 +281,7 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
             }
         }
 
-        RootCertStoreSave(ROOT_STORE_FW_IMG, fwImg, 0, NULL);
+        ret = RootCertStoreSave(fwImg, port, NULL);
     } else {
         printf("Unable to find certificates\r\n");
         ret = M2M_ERR_FAIL;
@@ -292,16 +289,28 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase) {
     return ret;
 }
 
+int GetPortIfNeeded(const char *fwImg, int port) {
+
+    // If no firmware image is specified...
+    if (strcmp(fwImg, "") == 0) {
+        // ... and no port is specified
+        if (port == 0) {
+            return detect_com_port();
+        }
+        else {
+            return port;
+        }
+    }
+}
+
 int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase, int verbose, int port) {
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
-    if (port == 0) {
-        port = detect_com_port();
-    }
+    port = GetPortIfNeeded(fwImg, port);
 
-    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode);
-    ret = UpdateRootCertStore(fwImg, ca_dir, erase);
+    ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode, port);
+    ret = UpdateRootCertStore(fwImg, ca_dir, erase, port);
 
     return ret;
 }
@@ -346,9 +355,7 @@ int HandleWriteCmd(const char *fwImg, int port) {
     int ret = M2M_ERR_FAIL;
     printf("Writing firmware to device...\n");
 
-    if (port == 0) {
-        port = detect_com_port();
-    }
+    port = GetPortIfNeeded(fwImg, port);
 
     printf("- Reading firmware from disk...\n");
     if((ret = LoadFirmware(fwImg, port, NULL) != M2M_SUCCESS)) {
@@ -375,9 +382,7 @@ int HandleEraseCmd(const char *fwImg, int tls, int root, int port) {
 
     printf("Erasing device...\n");
 
-    if (port == 0) {
-        port = detect_com_port();
-    }
+    port = GetPortIfNeeded(fwImg, port);
 
     if (tls) {
         InitializeTlsStore(&gau8TlsSrvSec, au8Pattern);
