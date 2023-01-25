@@ -536,9 +536,10 @@ int DumpRootCerts(const char *pcOutPath)
                 uint8 *pu8E = pu8N + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz);
 
                 if (strcmp(pcOutPath, "") != 0) {
+                    snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "public-key.sh");
+                    writeHexString2(acFileName, "openssl asn1parse -genconf public-rsa-cert-1.asn1 -out public-rsa-cert-1.der -noout", NULL, 0);
+                    writeHexString2(acFileName, "openssl pkey -pubin -in public-rsa-cert-1.der -inform DER -text -noout", NULL, 0);
                     snprintf(acFileName, sizeof(acFileName), "%s/%s-%i.asn1", pcOutPath, "public-rsa-cert", u32Idx+1);
-                    writeHexString2("public-rsa.sh", "openssl asn1parse -genconf public.asn1 -out public.der -noout", NULL, 0);
-                    writeHexString2("public-rsa.sh", "openssl pkey -pubin -in public.der -inform DER -text -noout", NULL, 0);
                     writeHexString2(acFileName, "asn1=SEQUENCE:pubkeyinfo", NULL, 0);
                     writeHexString2(acFileName, "[pubkeyinfo]", NULL, 0);
                     writeHexString2(acFileName, "algorithm=SEQUENCE:rsa_alg", NULL, 0);
@@ -553,7 +554,7 @@ int DumpRootCerts(const char *pcOutPath)
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
-                printf("  Certificate %i: ECDSA", u32Idx + 1);
+                printf("\n  Certificate %i: ECDSA", u32Idx + 1);
                 uint8 *pu8Key = pstrEntryHdr + sizeof(tstrRootCertEntryHeader);
 
                 // if (strcmp(pcOutPath, "") != 0) {
@@ -563,7 +564,7 @@ int DumpRootCerts(const char *pcOutPath)
             }
             else
             {
-                printf("  Certificate %i: UNKNOWN!", u32Idx + 1);
+                printf("\n  Certificate %i: UNKNOWN!", u32Idx + 1);
             }
 
             printf("\n  <%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \

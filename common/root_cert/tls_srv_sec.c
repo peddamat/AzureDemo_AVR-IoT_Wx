@@ -692,20 +692,22 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
 
                     if (strcmp(pcOutPath, "") != 0) {
-                        writeHexString("private.sh", "openssl asn1parse -genconf private.asn1 -out private.der -noout", NULL, 0);
-                        writeHexString("private.sh", "openssl rsa -in private.der -inform der -out private.pem", NULL, 0);
-                        writeHexString("private.sh", "openssl rsa -in private.pem -text -noout", NULL, 0);
-                        writePrivKey("asn1=SEQUENCE:private_key", NULL, 0);
-                        writePrivKey("[private_key]", NULL, 0);
-                        writePrivKey("version=INTEGER:0", NULL, 0);
-                        writePrivKey("n=INTEGER:0x", pstrKey->pu8N, pstrKey->u16NSize);
-                        writePrivKey("e=INTEGER:0x", pstrKey->pu8e, pstrKey->u16eSize);
-                        writePrivKey("d=INTEGER:0x", pstrKey->pu8d, pstrKey->u16dSize);
-                        writePrivKey("p=INTEGER:0x", pstrKey->pu8p, pstrKey->u16PSize);
-                        writePrivKey("q=INTEGER:0x", pstrKey->pu8q, pstrKey->u16QSize);
-                        writePrivKey("exp1=INTEGER:0x", pstrKey->pu8dP, pstrKey->u16dPSize);
-                        writePrivKey("exp2=INTEGER:0x", pstrKey->pu8dQ, pstrKey->u16dQSize);
-                        writePrivKey("coeff=INTEGER:0x", pstrKey->pu8QInv, pstrKey->u16QInvSize);
+                        snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.sh");
+                        writeHexString(acFileName, "openssl asn1parse -genconf private.asn1 -out private.der -noout", NULL, 0);
+                        writeHexString(acFileName, "openssl rsa -in private.der -inform der -out private.pem", NULL, 0);
+                        writeHexString(acFileName, "openssl rsa -in private.pem -text -noout", NULL, 0);
+                        snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.asn1");
+                        writeHexString(acFileName,"asn1=SEQUENCE:private_key", NULL, 0);
+                        writeHexString(acFileName,"[private_key]", NULL, 0);
+                        writeHexString(acFileName,"version=INTEGER:0", NULL, 0);
+                        writeHexString(acFileName,"n=INTEGER:0x", pstrKey->pu8N, pstrKey->u16NSize);
+                        writeHexString(acFileName,"e=INTEGER:0x", pstrKey->pu8e, pstrKey->u16eSize);
+                        writeHexString(acFileName,"d=INTEGER:0x", pstrKey->pu8d, pstrKey->u16dSize);
+                        writeHexString(acFileName,"p=INTEGER:0x", pstrKey->pu8p, pstrKey->u16PSize);
+                        writeHexString(acFileName,"q=INTEGER:0x", pstrKey->pu8q, pstrKey->u16QSize);
+                        writeHexString(acFileName,"exp1=INTEGER:0x", pstrKey->pu8dP, pstrKey->u16dPSize);
+                        writeHexString(acFileName,"exp2=INTEGER:0x", pstrKey->pu8dQ, pstrKey->u16dQSize);
+                        writeHexString(acFileName,"coeff=INTEGER:0x", pstrKey->pu8QInv, pstrKey->u16QInvSize);
                     }
 
                     printf("- Private Key Details:\n");
