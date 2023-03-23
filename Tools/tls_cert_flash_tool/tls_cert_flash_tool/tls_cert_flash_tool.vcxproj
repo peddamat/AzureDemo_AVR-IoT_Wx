@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_I2C|Win32">
@@ -18,7 +18,7 @@
     <ProjectGuid>{61535AA3-E410-4A60-ACD1-EECB960ABB69}</ProjectGuid>
     <RootNamespace>tls_srv_key_installer</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>tls_cert_flash_tool</ProjectName>
+    <ProjectName>atwinc1500_fwtool</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'" Label="Configuration">

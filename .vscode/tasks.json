@@ -4,11 +4,11 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build tls_cert_flash_tool",
+      "label": "build atwinc1500_fwtool",
       "type": "shell",
       "command": "msbuild",
       "args": [
-        "${workspaceFolder}/Tools/tls_cert_flash_tool/tls_cert_flash_tool.sln",
+        "${workspaceFolder}/Tools/tls_cert_flash_tool/atwinc1500_fwtool.sln",
         // "/p:Configuration=${input:build-configuration}",
         "/p:Configuration=Debug_UART",
         // Ask msbuild to generate full paths for file names.
@@ -52,7 +52,7 @@
     {
       "label": "run",
       "dependsOn": "build",
-      "command": "${workspaceFolder}/Tools/tls_cert_flash_tool/Debug_UART/tls_cert_flash_tool.exe",
+      "command": "${workspaceFolder}/Tools/tls_cert_flash_tool/Debug_UART/atwinc1500_fwtool.exe",
       "args": [
         "",
       ],
