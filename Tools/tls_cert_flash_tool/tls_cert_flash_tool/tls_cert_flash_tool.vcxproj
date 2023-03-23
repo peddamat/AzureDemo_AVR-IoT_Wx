@@ -124,7 +124,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>..\..\crypto_lib\lib;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\lib;..\..\crypto_lib\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -155,8 +155,8 @@
     <ClInclude Include="..\tinyfiles.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\root_certificate_downloader\root_certificate_downloader.vcxproj">
-      <Project>{188bbe69-6710-467c-9ca5-ef866925ed0b}</Project>
+    <ProjectReference Include="..\..\crypto_lib\crypto_lib\crypto_lib.vcxproj">
+      <Project>{0844b20d-4949-4529-8685-39501e02100e}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
