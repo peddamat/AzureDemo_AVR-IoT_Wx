@@ -123,7 +123,7 @@ GLOBALS
 static tstrTlsSrvSecReadEntry *gpstrRsaChain;
 static tstrTlsSrvSecReadEntry *gpstrECDSAChain;
 static uint8 gpau8HexTable[] = "0123456789abcdef";
-static tstrTlsSrvSecHdr *gpstrTlsSrvSecHdr = NULL;
+static tstrTlsSrvSecHdr *globalTlsStoreHeader = NULL;
 
 /**************************************************************/
 static void Hex2String(uint8 *pu8HexArray, uint32 u32Length, char *pcHexString) {
@@ -146,25 +146,25 @@ static tstrTlsSrvSecFileHandle *TlsSrvSecFopen(char *pcFileName, tenuTlsSrvSecFi
 
     if (enuMode == FILE_MODE_WRITE) {
         uint32 u32Idx;
-        for (u32Idx = 0; u32Idx < gpstrTlsSrvSecHdr->u32nEntries; u32Idx++) {
-            pstrEntry = &gpstrTlsSrvSecHdr->astrEntries[u32Idx];
+        for (u32Idx = 0; u32Idx < globalTlsStoreHeader->u32nEntries; u32Idx++) {
+            pstrEntry = &globalTlsStoreHeader->astrEntries[u32Idx];
             if (!memcmp(pstrEntry->acFileName, pcFileName, strlen(pcFileName))) {
                 goto __END;
             }
         }
 
-        if (gpstrTlsSrvSecHdr->u32nEntries < TLS_SRV_SEC_MAX_FILES) {
-            pstrEntry = &gpstrTlsSrvSecHdr->astrEntries[gpstrTlsSrvSecHdr->u32nEntries++];
+        if (globalTlsStoreHeader->u32nEntries < TLS_SRV_SEC_MAX_FILES) {
+            pstrEntry = &globalTlsStoreHeader->astrEntries[globalTlsStoreHeader->u32nEntries++];
             memcpy((uint8 *)pstrEntry->acFileName, (uint8 *)pcFileName, TLS_SRV_SEC_FILE_NAME_MAX);
-            pstrEntry->u32FileAddr = gpstrTlsSrvSecHdr->u32NextWriteAddr;
+            pstrEntry->u32FileAddr = globalTlsStoreHeader->u32NextWriteAddr;
         }
     } else if (enuMode == FILE_MODE_READ) {
         uint32 u32FileIdx;
 
-        for (u32FileIdx = 0; u32FileIdx < gpstrTlsSrvSecHdr->u32nEntries; u32FileIdx++) {
-            if (!m2m_strncmp((uint8 *)pcFileName, (uint8 *)gpstrTlsSrvSecHdr->astrEntries[u32FileIdx].acFileName,
-                             (uint16)M2M_MAX(strlen(pcFileName), strlen(gpstrTlsSrvSecHdr->astrEntries[u32FileIdx].acFileName)))) {
-                pstrEntry = &gpstrTlsSrvSecHdr->astrEntries[u32FileIdx];
+        for (u32FileIdx = 0; u32FileIdx < globalTlsStoreHeader->u32nEntries; u32FileIdx++) {
+            if (!m2m_strncmp((uint8 *)pcFileName, (uint8 *)globalTlsStoreHeader->astrEntries[u32FileIdx].acFileName,
+                             (uint16)M2M_MAX(strlen(pcFileName), strlen(globalTlsStoreHeader->astrEntries[u32FileIdx].acFileName)))) {
+                pstrEntry = &globalTlsStoreHeader->astrEntries[u32FileIdx];
                 break;
             }
         }
@@ -187,7 +187,7 @@ static sint8 TlsSrvSecFwrite(uint8 *pu8WriteBuff, uint16 u16BuffSize, tstrTlsSrv
     sint8 ret = M2M_ERR_FAIL;
     if ((pu8WriteBuff != NULL) && (pstrHandle != NULL)) {
         uint32 u32WriteOffset = (pstrHandle->pstrFile->u32FileAddr - M2M_TLS_SERVER_FLASH_OFFSET) + pstrHandle->u32Offset;
-        uint8 *pu8TlsSrvSec = (uint8 *)gpstrTlsSrvSecHdr;
+        uint8 *pu8TlsSrvSec = (uint8 *)globalTlsStoreHeader;
 
         memcpy(&pu8TlsSrvSec[u32WriteOffset], pu8WriteBuff, u16BuffSize);
         pstrHandle->u32Offset += u16BuffSize;
@@ -201,7 +201,7 @@ static sint8 TlsSrvSecFread(uint8 *pu8ReadBuff, uint32 u32BuffSize, tstrTlsSrvSe
     sint8 ret = M2M_ERR_FAIL;
     if ((pu8ReadBuff != NULL) && (pstrHandle != NULL)) {
         uint32 u32ReadOffset = (pstrHandle->pstrFile->u32FileAddr - M2M_TLS_SERVER_FLASH_OFFSET) + pstrHandle->u32Offset;
-        uint8 *pu8TlsSrvSec = (uint8 *)gpstrTlsSrvSecHdr;
+        uint8 *pu8TlsSrvSec = (uint8 *)globalTlsStoreHeader;
 
         memcpy(pu8ReadBuff, &pu8TlsSrvSec[u32ReadOffset], u32BuffSize);
         pstrHandle->u32Offset += u32BuffSize;
@@ -214,7 +214,7 @@ static sint8 TlsSrvSecFread(uint8 *pu8ReadBuff, uint32 u32BuffSize, tstrTlsSrvSe
 static void TlsSrvSecFclose(tstrTlsSrvSecFileHandle *pstrHandle) {
     if (pstrHandle != NULL) {
         pstrHandle->pstrFile->u32FileSize = (uint16)pstrHandle->u32Offset;
-        gpstrTlsSrvSecHdr->u32NextWriteAddr += WORD_ALIGN(pstrHandle->u32Offset);
+        globalTlsStoreHeader->u32NextWriteAddr += WORD_ALIGN(pstrHandle->u32Offset);
         free(pstrHandle);
     }
 }
@@ -468,8 +468,8 @@ static sint8 WriteTlsServerKeyMaterial(uint8 *pu8PrivKey, uint32 u32PrivKeySz, t
         if (ret == M2M_SUCCESS) {
             if (pu32SecSz != NULL) {
                 uint32 u32SecSz = sizeof(tstrTlsSrvSecHdr);
-                for (u8Idx = 0; u8Idx < (uint8)gpstrTlsSrvSecHdr->u32nEntries; u8Idx++) {
-                    u32SecSz += WORD_ALIGN(gpstrTlsSrvSecHdr->astrEntries[u8Idx].u32FileSize);
+                for (u8Idx = 0; u8Idx < (uint8)globalTlsStoreHeader->u32nEntries; u8Idx++) {
+                    u32SecSz += WORD_ALIGN(globalTlsStoreHeader->astrEntries[u8Idx].u32FileSize);
                 }
                 *pu32SecSz = u32SecSz;
             }
@@ -500,7 +500,7 @@ sint8 TlsSrvSecWriteCertChain(uint8 *pu8PrivKey, uint32 u32PrivKeySz, tstrFileIn
             InitializeTlsStore(pu8TlsSrvSecBuff, au8Pattern);
         } else if (enuMode == TLS_SRV_SEC_MODE_APPEND) {
             if (!memcmp(pu8TlsSrvSecBuff, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
-                gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)pu8TlsSrvSecBuff;
+                globalTlsStoreHeader = (tstrTlsSrvSecHdr *)pu8TlsSrvSecBuff;
             } else {
                 goto __ERR;
             }
@@ -518,10 +518,10 @@ __ERR:
 void InitializeTlsStore(uint8* pu8TlsSrvSecBuff, uint8  au8Pattern[8])
 {
     memset(pu8TlsSrvSecBuff, 0xFF, M2M_TLS_SERVER_FLASH_SIZE);
-    gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr*)pu8TlsSrvSecBuff;
-    memcpy(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
-    gpstrTlsSrvSecHdr->u32nEntries = 0;
-    gpstrTlsSrvSecHdr->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
+    globalTlsStoreHeader = (tstrTlsSrvSecHdr*)pu8TlsSrvSecBuff;
+    memcpy(globalTlsStoreHeader->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN);
+    globalTlsStoreHeader->u32nEntries = 0;
+    globalTlsStoreHeader->u32NextWriteAddr = sizeof(tstrTlsSrvSecHdr) + M2M_TLS_SERVER_FLASH_OFFSET;
 }
 
 /**************************************************************/
@@ -619,9 +619,12 @@ static tstrTlsSrvSecReadEntry *TlsLoadCertChain(char *pcTlsChainFile) {
     tstrTlsSrvSecReadEntry *pstrTail = NULL;
     uint8 au8Fname[TLS_SRV_SEC_FILE_NAME_MAX];
 
+    // Get a pointer to the start of the 'RSA.lst' file
     pstrHdl = TlsSrvSecFopen(pcTlsChainFile, FILE_MODE_READ);
     if (pstrHdl != NULL) {
+        // The RSA.lst file contains an array of file names...
         while (pstrHdl->u32Offset < pstrHdl->pstrFile->u32FileSize) {
+            // Read each filename into a local buffer
             TlsSrvSecFread(au8Fname, TLS_SRV_SEC_FILE_NAME_MAX, pstrHdl);
             if (TlsSrvSecAddReadEntry(au8Fname, &pstrNew) != M2M_SUCCESS) {
                 break;
@@ -693,9 +696,9 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
 
                     if (strcmp(pcOutPath, "") != 0) {
                         snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.sh");
-                        writeHexString(acFileName, "openssl asn1parse -genconf private.asn1 -out private.der -noout", NULL, 0);
-                        writeHexString(acFileName, "openssl rsa -in private.der -inform der -out private.pem", NULL, 0);
-                        writeHexString(acFileName, "openssl rsa -in private.pem -text -noout", NULL, 0);
+                        writeHexString(acFileName, "openssl asn1parse -genconf private-key.asn1 -out private-key.der -noout", NULL, 0);
+                        writeHexString(acFileName, "openssl rsa -in private-key.der -inform der -out private-key.pem", NULL, 0);
+                        writeHexString(acFileName, "openssl rsa -in private-key.pem -text -noout", NULL, 0);
                         snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.asn1");
                         writeHexString(acFileName,"asn1=SEQUENCE:private_key", NULL, 0);
                         writeHexString(acFileName,"[private_key]", NULL, 0);
@@ -739,7 +742,7 @@ sint8 TlsSrvSecReadInit(uint8 *pu8TlsSrvSec) {
         uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
         // Confirm the TLS Store's magic header
-        gpstrTlsSrvSecHdr = (tstrTlsSrvSecHdr *)pu8TlsSrvSec;
+        globalTlsStoreHeader = (tstrTlsSrvSecHdr *)pu8TlsSrvSec;
         if (!memcmp(pu8TlsSrvSec, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
             gpstrRsaChain = TlsLoadCertChain((char *)TLS_SRV_RSA_CHAIN_FILE);
             gpstrECDSAChain = TlsLoadCertChain((char *)TLS_SRV_ECDSA_CHAIN_FILE);
@@ -753,10 +756,10 @@ sint8 TlsSrvSecReadInit(uint8 *pu8TlsSrvSec) {
 sint8 TlsSrvSecReadDeinit(void) {
     sint8 ret = M2M_ERR_FAIL;
 
-    if (gpstrTlsSrvSecHdr != NULL) {
+    if (globalTlsStoreHeader != NULL) {
         uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
-        if (!memcmp((uint8 *)gpstrTlsSrvSecHdr, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
+        if (!memcmp((uint8 *)globalTlsStoreHeader, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
             tstrTlsSrvSecReadEntry *pstrCur, *pstrDel;
             if (gpstrRsaChain != NULL) {
                 pstrCur = gpstrRsaChain;
@@ -789,12 +792,12 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
     sint8 ret = M2M_ERR_FAIL;
     uint8 au8Pattern[] = TLS_SRV_SEC_START_PATTERN;
 
-    if (gpstrTlsSrvSecHdr != NULL) {
+    if (globalTlsStoreHeader != NULL) {
         tstrTlsSrvSecReadEntry *pstrCur;
 
-        if (!memcmp(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
+        if (!memcmp(globalTlsStoreHeader->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
 
-            printf("- Found %i entries...\n\n", gpstrTlsSrvSecHdr->u32nEntries);
+            printf("- Found %i entries...\n\n", globalTlsStoreHeader->u32nEntries);
 
             /* DIR Command */
             if (bListFiles) {

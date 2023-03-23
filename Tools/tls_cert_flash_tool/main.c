@@ -85,7 +85,7 @@ GLOBALS
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 
 static uint8 gauFirmware[FLASH_4M_TOTAL_SZ];
-static uint8 gau8TlsSrvSec[M2M_TLS_SERVER_FLASH_SIZE];
+static uint8 globalTlsStore[M2M_TLS_SERVER_FLASH_SIZE];
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
 TLS STORE LOADING
@@ -95,7 +95,7 @@ static sint8 TlsCertStoreLoadFromFlash(uint8 u8PortNum) {
     sint8 s8Ret = M2M_ERR_FAIL;
 
     if (programmer_init(&u8PortNum, 0) == M2M_SUCCESS) {
-        s8Ret = programmer_read(gau8TlsSrvSec, M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE);
+        s8Ret = programmer_read(globalTlsStore, M2M_TLS_SERVER_FLASH_OFFSET, M2M_TLS_SERVER_FLASH_SIZE);
         programmer_deinit();
     }
     return s8Ret;
@@ -108,7 +108,7 @@ static sint8 TlsCertStoreLoadFromFwImage(const char *pcFwFile) {
     fp = fopen(pcFwFile, "rb");
     if (fp) {
         fseek(fp, M2M_TLS_SERVER_FLASH_OFFSET, SEEK_SET);
-        fread(gau8TlsSrvSec, 1, M2M_TLS_SERVER_FLASH_SIZE, fp);
+        fread(globalTlsStore, 1, M2M_TLS_SERVER_FLASH_SIZE, fp);
         fclose(fp);
         s8Ret = M2M_SUCCESS;
     } else {
@@ -183,11 +183,11 @@ static sint8 TlsCertStoreSave(const char *pcFwFile, uint8 port, uint8 *vflash) {
     sint8 ret = M2M_ERR_FAIL;
     switch (enuStore) {
         case TLS_STORE_FLASH:
-            ret = TlsCertStoreSaveToFlash(gau8TlsSrvSec, port, vflash);
+            ret = TlsCertStoreSaveToFlash(globalTlsStore, port, vflash);
             break;
 
         case TLS_STORE_FW_IMG:
-            ret = TlsCertStoreSaveToFwImage(gau8TlsSrvSec, pcFwFile);
+            ret = TlsCertStoreSaveToFwImage(globalTlsStore, pcFwFile);
             break;
 
         default:
@@ -219,7 +219,7 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
     }
 
     printf("- Parsing TLS Store...\n");
-    TlsSrvSecReadInit(gau8TlsSrvSec);
+    TlsSrvSecReadInit(globalTlsStore);
 
     TlsSrvSecDumpContents(1, 1, 1, 1, 1, outfile, verbose);
 
@@ -246,7 +246,7 @@ int UpdateTlsStore(const char *fwImg, const char *outfile, const char *key, cons
         return ret;
     }
 
-    ret = TlsCertStoreWriteCertChain(key, cert, ca_dir, gau8TlsSrvSec, &u32TlsSrvSecSz, enuMode);
+    ret = TlsCertStoreWriteCertChain(key, cert, ca_dir, globalTlsStore, &u32TlsSrvSecSz, enuMode);
     if (ret == M2M_SUCCESS) {
         // Write the TLS Certificate Section buffer to the chosen destination,
         // either to the firmware image or the WINC stacked flash directly.
@@ -387,7 +387,7 @@ int HandleEraseCmd(const char *fwImg, int tls, int root, int port) {
     port = GetPortIfNeeded(fwImg, port, FALSE);
 
     if (tls) {
-        InitializeTlsStore(&gau8TlsSrvSec, au8Pattern);
+        InitializeTlsStore(&globalTlsStore, au8Pattern);
 		ret = TlsCertStoreSave(fwImg, port, NULL);
     }
 

@@ -1,0 +1,13 @@
+
+
+
+
+
+ListDirectoryContents(ROOT_CERT_PATH, "cer", &ppCertNames, &u32nCerts);
+if(ReadFileToBuffer(ppCertNames[u32Idx], &pu8RootCert, &u32CertSz) == M2M_SUCCESS)
+if(WriteRootCertificate(pu8RootCert, u32CertSz, vflash) != 0)
+int WriteRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, uint8* vflash)
+static int GetRootCertificate(uint8 *pu8RootCert, uint32 u32RootCertSz, txtrX509CertInfo *pstrX509)
+ret = DecodeX509Certificate(pu8RootCert, u32RootCertSz, &pcRootCertDER, &u32FileSize);
+sint8 CryptoX509CertDecode(uint8 *pu8X509CertBuf, uint16 u16X509CertBuffer, txtrX509CertInfo *pstrCert, uint8 bDumpCert, int verbose)
+if(X509Cert_Decode(&strX509Buff, u16X509CertBuffer, &strPool, &strX509Cer , bDumpCert, verbose) == X509_SUCCESS)

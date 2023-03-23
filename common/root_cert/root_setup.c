@@ -539,7 +539,7 @@ int DumpRootCerts(const char *pcOutPath)
                     snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "public-key.sh");
                     writeHexString2(acFileName, "openssl asn1parse -genconf public-rsa-cert-1.asn1 -out public-rsa-cert-1.der -noout", NULL, 0);
                     writeHexString2(acFileName, "openssl pkey -pubin -in public-rsa-cert-1.der -inform DER -text -noout", NULL, 0);
-                    snprintf(acFileName, sizeof(acFileName), "%s/%s-%i.asn1", pcOutPath, "public-rsa-cert", u32Idx+1);
+                    snprintf(acFileName, sizeof(acFileName), "%s/%s-%i.asn1", pcOutPath, "public-key-rsa", u32Idx+1);
                     writeHexString2(acFileName, "asn1=SEQUENCE:pubkeyinfo", NULL, 0);
                     writeHexString2(acFileName, "[pubkeyinfo]", NULL, 0);
                     writeHexString2(acFileName, "algorithm=SEQUENCE:rsa_alg", NULL, 0);
