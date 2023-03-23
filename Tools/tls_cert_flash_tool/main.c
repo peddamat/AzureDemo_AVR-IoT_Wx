@@ -212,7 +212,7 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
 
     printf("Dumping TLS Store contents...\n");
 
-    port = GetPortIfNeeded(fwImg, port);
+    port = GetPortIfNeeded(fwImg, port, FALSE);
 
     if((ret = TlsCertStoreLoad(fwImg, port, NULL) != M2M_SUCCESS)) {
         return ret;
@@ -289,12 +289,13 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase, int po
     return ret;
 }
 
-int GetPortIfNeeded(const char *fwImg, int port) {
+int GetPortIfNeeded(const char *fwImg, int port, boolean force) {
 
-    // If no firmware image is specified...
-    if (strcmp(fwImg, "") == 0) {
+    // If we're not operating on a local firmware image...
+    if (force || (strcmp(fwImg, "") == 0)) {
         // ... and no port is specified
         if (port == 0) {
+            // let's assume t
             return detect_com_port();
         }
         else {
@@ -307,7 +308,7 @@ int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, con
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
-    port = GetPortIfNeeded(fwImg, port);
+    port = GetPortIfNeeded(fwImg, port, FALSE);
 
     ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode, port);
     ret = UpdateRootCertStore(fwImg, ca_dir, erase, port);
@@ -355,7 +356,8 @@ int HandleWriteCmd(const char *fwImg, int port) {
     int ret = M2M_ERR_FAIL;
     printf("Writing firmware to device...\n");
 
-    port = GetPortIfNeeded(fwImg, port);
+    // Force the port check since writes are always over USB/serial
+    port = GetPortIfNeeded(fwImg, port, TRUE);
 
     printf("- Reading firmware from disk...\n");
     if((ret = LoadFirmware(fwImg, port, NULL) != M2M_SUCCESS)) {
@@ -382,7 +384,7 @@ int HandleEraseCmd(const char *fwImg, int tls, int root, int port) {
 
     printf("Erasing device...\n");
 
-    port = GetPortIfNeeded(fwImg, port);
+    port = GetPortIfNeeded(fwImg, port, FALSE);
 
     if (tls) {
         InitializeTlsStore(&gau8TlsSrvSec, au8Pattern);
