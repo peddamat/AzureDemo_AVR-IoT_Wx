@@ -692,10 +692,10 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
 
                     if (strcmp(pcOutPath, "") != 0) {
-                        snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.sh");
-                        writeHexString(acFileName, "openssl asn1parse -genconf private.asn1 -out private.der -noout", NULL, 0);
-                        writeHexString(acFileName, "openssl rsa -in private.der -inform der -out private.pem", NULL, 0);
-                        writeHexString(acFileName, "openssl rsa -in private.pem -text -noout", NULL, 0);
+                        snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.bat");
+                        writeHexString(acFileName, "openssl asn1parse -genconf private-key.asn1 -out private-key.der -noout", NULL, 0);
+                        writeHexString(acFileName, "openssl rsa -in private-key.der -inform der -out private-key.pem", NULL, 0);
+                        writeHexString(acFileName, "openssl rsa -in private-key.pem -text -noout", NULL, 0);
                         snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "private-key.asn1");
                         writeHexString(acFileName,"asn1=SEQUENCE:private_key", NULL, 0);
                         writeHexString(acFileName,"[private_key]", NULL, 0);
