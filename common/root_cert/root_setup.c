@@ -516,12 +516,18 @@ int DumpRootCerts(const char *pcOutPath)
     // Make sure the Root Cert Store isn't empty
     if(m2m_memcmp(au8EmptyPattern, pstrRootFlashHdr->au8StartPattern, ROOT_CERT_FLASH_START_PATTERN_LENGTH) != 0)
     {
+		FILE* fp;
+        if (strcmp(pcOutPath, "") != 0) {
+			snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "public-key.bat");
+            fp = fopen(acFileName, "a+");
+        }
+
         u32nStoredCerts = pstrRootFlashHdr->u32nCerts;
         bIncrement = 1;
 
 		printf("Found %i entries:\n", u32nStoredCerts);
 
-        for(u32Idx = 0 ; u32Idx < u32nStoredCerts ; u32Idx ++)
+        for(u32Idx = 1 ; u32Idx <= u32nStoredCerts ; u32Idx++)
         {
             // Points to the first cert after the header
             pstrEntryHdr = (tstrRootCertEntryHeader*)((void *)&gau8RootCertMem[u16Offset]);
@@ -531,15 +537,15 @@ int DumpRootCerts(const char *pcOutPath)
 
             if (pstrEntryHdr->strPubKey.u32PubKeyType == 1)
             {
-                printf("%i) RSA Certificate:", u32Idx + 1);
+                printf("%i) RSA Certificate:", u32Idx);
                 uint8 *pu8N = &gau8RootCertMem[u16Offset+ sizeof(tstrRootCertEntryHeader)];
                 uint8 *pu8E = pu8N + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz);
 
                 if (strcmp(pcOutPath, "") != 0) {
-                    snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "public-key.sh");
-                    writeHexString2(acFileName, "openssl asn1parse -genconf public-rsa-cert-1.asn1 -out public-rsa-cert-1.der -noout", NULL, 0);
-                    writeHexString2(acFileName, "openssl pkey -pubin -in public-rsa-cert-1.der -inform DER -text -noout", NULL, 0);
-                    snprintf(acFileName, sizeof(acFileName), "%s/%s-%i.asn1", pcOutPath, "public-rsa-cert", u32Idx+1);
+                    snprintf(acFileName, sizeof(acFileName), "%s/%s", pcOutPath, "public-key.bat");
+                    fprintf(fp, "openssl asn1parse -genconf public-rsa-cert-%02d.asn1 -out public-rsa-cert-%02d.der -noout\n", u32Idx, u32Idx);
+                    fprintf(fp, "openssl pkey -pubin -in public-rsa-cert-%02d.der -inform DER -text -noout\n", u32Idx);
+                    snprintf(acFileName, sizeof(acFileName), "%s/%s-%02d.asn1", pcOutPath, "public-rsa-cert", u32Idx);
                     writeHexString2(acFileName, "asn1=SEQUENCE:pubkeyinfo", NULL, 0);
                     writeHexString2(acFileName, "[pubkeyinfo]", NULL, 0);
                     writeHexString2(acFileName, "algorithm=SEQUENCE:rsa_alg", NULL, 0);
@@ -554,7 +560,7 @@ int DumpRootCerts(const char *pcOutPath)
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
-                printf("  %i) ECDSA Certificate:", u32Idx + 1);
+                printf("  %i) ECDSA Certificate:", u32Idx);
                 uint8 *pu8Key = pstrEntryHdr + sizeof(tstrRootCertEntryHeader);
 
                 // if (strcmp(pcOutPath, "") != 0) {
@@ -564,7 +570,7 @@ int DumpRootCerts(const char *pcOutPath)
             }
             else
             {
-                printf("  %i) UNKNOWN!", u32Idx + 1);
+                printf("  %i) UNKNOWN!", u32Idx);
             }
 
             printf(" %d/%d/%02d [%02d:%02d:%02d] to %d/%d/%02d [%02d:%02d:%02d]\n", \
@@ -578,6 +584,7 @@ int DumpRootCerts(const char *pcOutPath)
             u16Offset += (pstrKey->u32PubKeyType == ROOT_CERT_PUBKEY_RSA) ?
                 (WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz) + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16ESz)) : (WORD_ALIGN(pstrKey->strEcsdaKeyInfo.u16KeySz) * 2);
         }
+        fclose(fp);
     }
     else
     {
