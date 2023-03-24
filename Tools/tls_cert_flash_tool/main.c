@@ -304,14 +304,24 @@ int GetPortIfNeeded(const char *fwImg, int port, boolean force) {
     }
 }
 
-int HandleUpdateCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *pf_bin, const char *ca_dir, int erase, int verbose, int port) {
+int HandleUpdateRootCmd(const char *fwImg, const char *outfile, const char *ca_dir, int erase, int port) {
+    int ret = M2M_ERR_FAIL;
+    tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
+
+    port = GetPortIfNeeded(fwImg, port, FALSE);
+
+    ret = UpdateRootCertStore(fwImg, ca_dir, erase, port);
+
+    return ret;
+}
+
+int HandleUpdateTlsCmd(const char *fwImg, const char *outfile, const char *key, const char *cert, const char *ca_dir, int erase, int port) {
     int ret = M2M_ERR_FAIL;
     tenuWriteMode tlsMode = erase ? TLS_SRV_SEC_MODE_WRITE : TLS_SRV_SEC_MODE_APPEND;
 
     port = GetPortIfNeeded(fwImg, port, FALSE);
 
     ret = UpdateTlsStore(fwImg, outfile, key, cert, ca_dir, tlsMode, port);
-    ret = UpdateRootCertStore(fwImg, ca_dir, erase, port);
 
     return ret;
 }
@@ -421,20 +431,21 @@ int main(int argc, char **argv) {
     int nerrors1;
 
 	// Update Command Setup
-    struct arg_rex *update_cmd = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
+    struct arg_rex *update_cmd2 = arg_rex1(NULL, NULL, "update", NULL, REG_ICASE, NULL);
     struct arg_file *infiles2 = arg_file0(NULL, NULL, "<firmware image>", "Input firmware binary");
     struct arg_file *outfile2 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
-    struct arg_file *key = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
-    struct arg_file *cert = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format. The certificate SHALL contain the public key associated with the given private key (If the private key is given)");
-    struct arg_file *pf_bin = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
-    struct arg_file *ca_dir = arg_file0(NULL, "ca_dir", "<ca_dir>", "[Optional] Path to a folder containing the intermediate CAs and the Root CA of the given certificate");
+    struct arg_file *key2 = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
+    struct arg_file *cert2 = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format");
+    struct arg_file *pf_bin2 = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
+    struct arg_lit *update_tls = arg_lit0("t", "tls", "TLS Store");
+    struct arg_lit *update_root = arg_lit0("r", "root", "Update Root Store");
+    struct arg_file *ca_dir2 = arg_file0(NULL, "ca_dir", "<ca_dir>", "Path to folder containing intermediate CAs and/or Root CA of given certificate");
     struct arg_lit *erase2 = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
     struct arg_int *port2 = arg_int0("p", "port", "<COM Port>", "COM Port");
-    struct arg_lit *verbose2  = arg_lit0("v", "verbose", "Output more details");
     struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
     struct arg_end *end2 = arg_end(20);
 
-    void *argtable2[] = {update_cmd, infiles2, outfile2, key, cert, pf_bin, ca_dir, erase2, verbose2, port2, help2, end2};
+    void *argtable2[] = {update_cmd2, infiles2, outfile2, key2, cert2, pf_bin2, update_tls, update_root, ca_dir2, erase2, port2, help2, end2};
     int nerrors2;
 
 	// Erase Command Setup
@@ -451,13 +462,13 @@ int main(int argc, char **argv) {
 
 	// Write Command Setup
     struct arg_rex *write_cmd = arg_rex1(NULL, NULL, "write", NULL, REG_ICASE, NULL);
-    struct arg_file *infiles4 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
-    struct arg_int *port4 = arg_int0("p", "port", "<COM Port>", "COM Port");
-    struct arg_lit *help4 = arg_lit0("h", "help", "Show help");
-    struct arg_end *end4 = arg_end(20);
+    struct arg_file *infiles5 = arg_file1(NULL, NULL, "<firmware image>", "Input firmware binary");
+    struct arg_int *port5 = arg_int0("p", "port", "<COM Port>", "COM Port");
+    struct arg_lit *help5 = arg_lit0("h", "help", "Show help");
+    struct arg_end *end5 = arg_end(20);
 
-    void *argtable4[] = {write_cmd, infiles4, port4, help4, end4};
-    int nerrors4;
+    void *argtable5[] = {write_cmd, infiles5, port5, help5, end5};
+    int nerrors5;
 
 
     const char *progname = "atwin1500_fwtool.exe";
@@ -467,7 +478,7 @@ int main(int argc, char **argv) {
     if (arg_nullcheck(argtable1) != 0 ||
         arg_nullcheck(argtable2) != 0 ||
         arg_nullcheck(argtable3) != 0 ||
-        arg_nullcheck(argtable4) != 0) {
+        arg_nullcheck(argtable5) != 0) {
         /* NULL entries were detected, some allocations must have failed */
         printf("%s: insufficient memory\n", progname);
         exitcode = 1;
@@ -478,19 +489,35 @@ int main(int argc, char **argv) {
     port1->ival[0] = 0;
     port2->ival[0] = 0;
     port3->ival[0] = 0;
-    port4->ival[0] = 0;
+    port5->ival[0] = 0;
 
     if (arg_parse(argc, argv, argtable1) == 0) {
+        if (help1->count == 1) goto __READ;
         exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count, port1->ival[0]);
     } else if (arg_parse(argc, argv, argtable2) == 0) {
-        exitcode = HandleUpdateCmd(infiles2->filename[0], outfile2->filename[0], key->filename[0], cert->filename[0], pf_bin->filename[0], ca_dir->filename[0], erase2->count, verbose2->count, port2->ival[0]);
+        if (help2->count == 1) goto __UPDATE;
+        if (update_tls->count == 1) {
+			if (!(infiles2->count | outfile2->count | key2->count | cert2->count | ca_dir2->count | erase2->count)) goto __UPDATE;
+            exitcode = HandleUpdateTlsCmd(infiles2->filename[0], outfile2->filename[0], key2->filename[0], cert2->filename[0], ca_dir2->filename[0], erase2->count, port2->ival[0]);
+        }
+        else if (update_root->count == 1) {
+			if (!(infiles2->count | outfile2->count | ca_dir2->count | erase2->count)) goto __UPDATE;
+            exitcode = HandleUpdateRootCmd(infiles2->filename[0], outfile2->filename[0], ca_dir2->filename[0], erase2->count, port2->ival[0]);
+        }
+        else {
+            goto __UPDATE;
+        }
     } else if (arg_parse(argc, argv, argtable3) == 0) {
+        if (help3->count == 1) goto __ERASE;
+        if (!(erase_tls->count | erase_root->count)) goto __ERASE;
         exitcode = HandleEraseCmd(infiles3->filename[0], erase_tls->count, erase_root->count, port3->ival[0]);
-    } else if (arg_parse(argc, argv, argtable4) == 0) {
-        exitcode = HandleWriteCmd(infiles4->filename[0], port4->ival[0]);
+    } else if (arg_parse(argc, argv, argtable5) == 0) {
+        if (help5->count == 1) goto __WRITE;
+        exitcode = HandleWriteCmd(infiles5->filename[0], port5->ival[0]);
     } else {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {
+__READ:
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
 
@@ -500,30 +527,62 @@ int main(int argc, char **argv) {
                 arg_print_glossary(stdout, argtable1, "  %-25s %s\n");
 
                 printf("\nExamples: \n");
-                printf("  %s read -rsa -privkey -dir\n", progname);
-                printf("  %s read -rsa -all\n", progname);
-                printf("  %s read -rsa -out C:/Certs/\n", progname);
-                printf("  %s read -rsa -ecdsa -dir-fwimg m2m_aio_3a0.bin\n", progname);
+                printf("  %s read -o <output dir>\n", progname);
+                printf("  %s read atwinc1500.bin\n", progname);
+                printf("  %s read atwinc1500.bin -v\n", progname);
                 goto __EXIT;
             }
             arg_print_errors(stdout, end1, "- error");
-        } else if (update_cmd->count > 0) {
+        } else if (update_cmd2->count > 0) {
+__UPDATE:
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable2, "\n");
 
-            if (help1->count) {
-                printf("\nWrite X.509 Certificate chain on WINC Device Flash or a given WINC firmware image file\n\n");
+            if (help2->count) {
+                printf("\nUpdate\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable2, "  %-25s %s\n");
 
                 printf("\nExamples: \n");
-                printf("  %s update -key rsa.key -cert rsa.cer -erase\n", progname);
-                printf("  %s update -nokey -cert ecdsa.cer -cadir CADir\n", progname);
-                printf("  %s update -key rsa.key -cert rsa.cer -cadir CADir\n", progname);
-                printf("  %s update -key rsa.key -cert rsa.cer -fwimg m2m_aio_3a0.bin\n", progname);
+                printf("  %s update --tls -key rsa.key --cert rsa.cer --erase\n", progname);
+                printf("  %s update --root --cadir <dir>\n", progname);
                 goto __EXIT;
             }
             arg_print_errors(stdout, end2, "- error");
+        } else if (erase_cmd->count > 0) {
+__ERASE:
+            printf("Usage: %s ", progname);
+            arg_print_syntax(stdout, argtable3, "\n");
+
+            if (help3->count) {
+                printf("\nErase\n\n");
+                printf("Options:\n");
+                arg_print_glossary(stdout, argtable3, "  %-25s %s\n");
+
+                printf("\nExamples: \n");
+                printf("  %s erase --root\n", progname);
+                printf("  %s erase --tls\n", progname);
+                printf("  %s erase --root --tls\n", progname);
+                goto __EXIT;
+            }
+            arg_print_errors(stdout, end3, "- error");
+        } else if (write_cmd->count > 0) {
+__WRITE:
+            printf("Usage: %s ", progname);
+            arg_print_syntax(stdout, argtable5, "\n");
+
+            if (help5->count) {
+                printf("\nWrite WINC firmware image file to device\n\n");
+                printf("Options:\n");
+                arg_print_glossary(stdout, argtable5, "  %-25s %s\n");
+
+                printf("\nExamples: \n");
+                printf("  %s write -key rsa.key -cert rsa.cer -erase\n", progname);
+                printf("  %s write -key rsa.key -cert rsa.cer -fwimg m2m_aio_3a0.bin\n", progname);
+                goto __EXIT;
+            }
+            arg_print_errors(stdout, end5, "- error");
+
         } else {
             printf("Usage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
@@ -532,7 +591,7 @@ int main(int argc, char **argv) {
             printf("       %s ", progname);
             arg_print_syntax(stdout, argtable3, "\n\n");
             printf("       %s ", progname);
-            arg_print_syntax(stdout, argtable4, "\n\n");
+            arg_print_syntax(stdout, argtable5, "\n\n");
 
             printf("For a specific command help, use <%s <CMD> --help>\n\n", progname);
         }
@@ -542,7 +601,7 @@ __EXIT:
     arg_freetable(argtable1, sizeof(argtable1) / sizeof(argtable1[0]));
     arg_freetable(argtable2, sizeof(argtable2) / sizeof(argtable2[0]));
     arg_freetable(argtable3, sizeof(argtable3) / sizeof(argtable3[0]));
-    arg_freetable(argtable4, sizeof(argtable4) / sizeof(argtable4[0]));
+    arg_freetable(argtable5, sizeof(argtable5) / sizeof(argtable5[0]));
 
     return exitcode;
 }
