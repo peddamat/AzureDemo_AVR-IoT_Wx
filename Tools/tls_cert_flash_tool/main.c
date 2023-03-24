@@ -218,12 +218,12 @@ int HandleReadCmd(const char *fwImg, const char *outfile, int verbose, int port)
         return ret;
     }
 
-    printf("- Parsing TLS Store...\n");
+    //printf("- Parsing TLS Store...\n");
     TlsSrvSecReadInit(gau8TlsSrvSec);
 
     TlsSrvSecDumpContents(1, 1, 1, 1, 1, outfile, verbose);
 
-    printf("\nDumping Root Cert Store contents...\n");
+    printf("Dumping Root Cert Store contents...\n");
     ret = RootCertStoreLoad(fwImg, port, NULL);
     if (ret != M2M_SUCCESS) {
         return ret;
@@ -436,7 +436,6 @@ int main(int argc, char **argv) {
     struct arg_file *outfile2 = arg_file0("o", NULL, "<output directory>", "Directory to dump certs");
     struct arg_file *key2 = arg_file0(NULL, "key", "<key>", "Private key in PEM format (RSA Keys only). It MUST NOT be encrypted");
     struct arg_file *cert2 = arg_file0(NULL, "cert", "<cert>", "X.509 Certificate file in PEM or DER format");
-    struct arg_file *pf_bin2 = arg_file0(NULL, "pf_bin", "<pf_bin>", "Programmer binary");
     struct arg_lit *update_tls = arg_lit0("t", "tls", "TLS Store");
     struct arg_lit *update_root = arg_lit0("r", "root", "Update Root Store");
     struct arg_file *ca_dir2 = arg_file0(NULL, "ca_dir", "<ca_dir>", "Path to folder containing intermediate CAs and/or Root CA of given certificate");
@@ -445,7 +444,7 @@ int main(int argc, char **argv) {
     struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
     struct arg_end *end2 = arg_end(20);
 
-    void *argtable2[] = {update_cmd2, infiles2, outfile2, key2, cert2, pf_bin2, update_tls, update_root, ca_dir2, erase2, port2, help2, end2};
+    void *argtable2[] = {update_cmd2, infiles2, outfile2, key2, cert2, update_tls, update_root, ca_dir2, erase2, port2, help2, end2};
     int nerrors2;
 
 	// Erase Command Setup
@@ -589,7 +588,7 @@ __WRITE:
             printf("       %s ", progname);
             arg_print_syntax(stdout, argtable2, "\n");
             printf("       %s ", progname);
-            arg_print_syntax(stdout, argtable3, "\n\n");
+            arg_print_syntax(stdout, argtable3, "\n");
             printf("       %s ", progname);
             arg_print_syntax(stdout, argtable5, "\n\n");
 

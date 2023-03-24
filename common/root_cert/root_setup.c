@@ -519,7 +519,7 @@ int DumpRootCerts(const char *pcOutPath)
         u32nStoredCerts = pstrRootFlashHdr->u32nCerts;
         bIncrement = 1;
 
-		printf("- Found %i entries!\n\n", u32nStoredCerts);
+		printf("Found %i entries:\n", u32nStoredCerts);
 
         for(u32Idx = 0 ; u32Idx < u32nStoredCerts ; u32Idx ++)
         {
@@ -527,11 +527,11 @@ int DumpRootCerts(const char *pcOutPath)
             pstrEntryHdr = (tstrRootCertEntryHeader*)((void *)&gau8RootCertMem[u16Offset]);
             pstrKey      = &pstrEntryHdr->strPubKey;
 
-            K_DUMP("\n  Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
+            //K_DUMP("\n* Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
 
             if (pstrEntryHdr->strPubKey.u32PubKeyType == 1)
             {
-                printf("  Certificate %i: RSA", u32Idx + 1);
+                printf("%i) RSA Certificate:", u32Idx + 1);
                 uint8 *pu8N = &gau8RootCertMem[u16Offset+ sizeof(tstrRootCertEntryHeader)];
                 uint8 *pu8E = pu8N + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz);
 
@@ -554,7 +554,7 @@ int DumpRootCerts(const char *pcOutPath)
             }
             else if (pstrEntryHdr->strPubKey.u32PubKeyType == 2)
             {
-                printf("\n  Certificate %i: ECDSA", u32Idx + 1);
+                printf("  %i) ECDSA Certificate:", u32Idx + 1);
                 uint8 *pu8Key = pstrEntryHdr + sizeof(tstrRootCertEntryHeader);
 
                 // if (strcmp(pcOutPath, "") != 0) {
@@ -564,15 +564,16 @@ int DumpRootCerts(const char *pcOutPath)
             }
             else
             {
-                printf("\n  Certificate %i: UNKNOWN!", u32Idx + 1);
+                printf("  %i) UNKNOWN!", u32Idx + 1);
             }
 
-            printf("\n  <%d-%02d-%02d %02d:%02d:%02d> to <%d-%02d-%02d %02d:%02d:%02d>\n\n", \
-                pstrEntryHdr->strStartDate.u16Year, pstrEntryHdr->strStartDate.u8Month, pstrEntryHdr->strStartDate.u8Day, \
+            printf(" %d/%d/%02d [%02d:%02d:%02d] to %d/%d/%02d [%02d:%02d:%02d]\n", \
+                pstrEntryHdr->strStartDate.u8Month, pstrEntryHdr->strStartDate.u8Day, pstrEntryHdr->strStartDate.u16Year, \
 				pstrEntryHdr->strStartDate.u8Hour, pstrEntryHdr->strStartDate.u8Minute, pstrEntryHdr->strStartDate.u8Second, \
-                pstrEntryHdr->strExpDate.u16Year, pstrEntryHdr->strExpDate.u8Month, pstrEntryHdr->strExpDate.u8Day, \
+                pstrEntryHdr->strExpDate.u8Month, pstrEntryHdr->strExpDate.u8Day, pstrEntryHdr->strExpDate.u16Year, \
 				pstrEntryHdr->strExpDate.u8Hour, pstrEntryHdr->strExpDate.u8Minute, pstrEntryHdr->strExpDate.u8Second);
-
+            K_DUMP("   Name Hash (SHA1): ", pstrEntryHdr->au8SHA1NameHash, CRYPTO_SHA1_DIGEST_SIZE);
+            printf("\n");
             u16Offset += sizeof(tstrRootCertEntryHeader);
             u16Offset += (pstrKey->u32PubKeyType == ROOT_CERT_PUBKEY_RSA) ?
                 (WORD_ALIGN(pstrKey->strRsaKeyInfo.u16NSz) + WORD_ALIGN(pstrKey->strRsaKeyInfo.u16ESz)) : (WORD_ALIGN(pstrKey->strEcsdaKeyInfo.u16KeySz) * 2);

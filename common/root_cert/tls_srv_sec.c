@@ -722,7 +722,6 @@ static sint8 TlsSrvDumpChain(tstrTlsSrvSecReadEntry *pstrChain, uint8 bPrintPriv
                         M2M_DUMP_BUF("  Exponent2 (dQ): ", pstrKey->pu8dQ, pstrKey->u16dQSize);
                         M2M_DUMP_BUF("  Coefficient (QInv): ", pstrKey->pu8QInv, pstrKey->u16QInvSize);
                     }
-                    M2M_PRINT("\n");
                 }
             }
             pstrCur = pstrCur->pstrNext;
@@ -794,42 +793,40 @@ sint8 TlsSrvSecDumpContents(uint8 bDumpRsa, uint8 bDumpEcdsa, uint8 bPrintPrivKe
 
         if (!memcmp(gpstrTlsSrvSecHdr->au8SecStartPattern, au8Pattern, TLS_SRV_SEC_START_PATTERN_LEN)) {
 
-            printf("- Found %i entries...\n\n", gpstrTlsSrvSecHdr->u32nEntries);
+            printf("Found %i entries...\n", gpstrTlsSrvSecHdr->u32nEntries);
 
             /* DIR Command */
             if (bListFiles) {
 
                 if ((gpstrRsaChain != NULL) && (bDumpRsa)) {
                     // M2M_PRINT("<RSA CERTIFICATE CHAIN FILE LIST>\n\n");
-                    printf("  RSA Certificate Chain File List\n");
-                    printf("    %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
+                    printf("- RSA Certificate Chain File List\n");
+                    printf("  %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
                     pstrCur = gpstrRsaChain;
                     tstrRsaPrivateKey *pstrKey = &pstrCur->strRSAPrivKey;
                     while (pstrCur != NULL) {
-                        printf("    %-*s %*lu %-12s %s\n",
+                        printf("  %-*s %*lu %-12s %s\n",
                                TLS_SRV_SEC_FILE_NAME_MAX,
                                pstrCur->au8FileName, 4, pstrCur->u32FileSz,
                                pstrCur->bIsCert ? "CERTIFICATE" : "PRIVATE KEY",
                                ((pstrCur->pu8CmnName != NULL) ? (char *)pstrCur->pu8CmnName : (char *)" "));
                         pstrCur = pstrCur->pstrNext;
                     }
-                    printf("\n");
                 }
 
                 if ((gpstrECDSAChain != NULL) && (bDumpEcdsa)) {
                     // M2M_PRINT("<ECDSA CERTIFICATE CHAIN FILE LIST>\n\n");
-                    printf("  ECDSA Certificate Chain File List\n");
-                    printf("    %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
+                    printf("- ECDSA Certificate Chain File List\n");
+                    printf("  %-*s %*s %-12s %s\n", TLS_SRV_SEC_FILE_NAME_MAX, "NAME", 4, "SIZE", "TYPE", "INFO");
                     pstrCur = gpstrECDSAChain;
                     while (pstrCur != NULL) {
-                        printf("    %-*s %*lu %-12s %s\n",
+                        printf("  %-*s %*lu %-12s %s\n",
                                   TLS_SRV_SEC_FILE_NAME_MAX,
                                   pstrCur->au8FileName, 4, pstrCur->u32FileSz,
                                   pstrCur->bIsCert ? "CERTIFICATE" : "PRIVATE KEY",
                                   (pstrCur->pu8CmnName != NULL) ? (char *)pstrCur->pu8CmnName : (char *)" ");
                         pstrCur = pstrCur->pstrNext;
                     }
-                    printf("\n");
                 }
             }
 
