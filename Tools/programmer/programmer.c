@@ -7,7 +7,6 @@
 */
 
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 //#include "../efuse/efuse.h"
@@ -348,32 +347,6 @@ sint8 programmer_init(void *pvInitValue,uint8 u8Br)
 			M2M_PRINT("please set the port number in arguments to send the break command\n");
 		}
 	}
-
-    if(port == 0) // Auto-detect
-    {
-		// We should never get here 
-		assert(FALSE);
-
-        uint8 avail[255] = {0};
-        int navail = nm_bus_port_detect(avail, nm_uart_sync_cmd, 0);
-        if(navail < 1) // No ports available.
-        {
-            ret = -1;
-            goto ERR;
-        }
-        else if(navail < 2)
-            port = avail[0]; // Only one port available. Use it
-        else
-            port = 0; // Let user choose COM port
-    }
-    //else
-    //{
-    //    // comports is normally populated when nm_bus_port_detect() is called, but we don't want to do all
-    //    // of the auto-detect stuff if we've manually supplied a port to use.
-    //    comports[0][0] = port;
-    //    comports[0][1] = 0;
-    //    comports[0][2] = 1; // Flow control
-    //}
 #endif
 
 	ret = nm_bus_iface_init((uint8 *)&port);
@@ -382,14 +355,6 @@ sint8 programmer_init(void *pvInitValue,uint8 u8Br)
 		M2M_PRINT(">>(ERR):Connect Fail\n");
 		goto ERR;
 	}
-
-#ifdef CONF_WINC_USE_UART
-    uart_type = nm_uart_sync_cmd();
-    if (uart_type >= 0)
-        comports[0][1] = uart_type;
-    else
-        goto ERR;
-#endif
 
 #ifndef CONF_WINC_USE_UART
 	chip_reset_and_cpu_halt();

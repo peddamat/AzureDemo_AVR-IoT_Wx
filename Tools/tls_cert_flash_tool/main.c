@@ -290,18 +290,18 @@ int UpdateRootCertStore(const char *fwImg, const char *ca_dir, int erase, int po
 }
 
 int GetPortIfNeeded(const char *fwImg, int port, boolean force) {
+    static int saved_port = 0;
+
+    if (port != 0) save_port = port;
+    if (save_port != 0) return save_port;
 
     // If we're not operating on a local firmware image...
     if (force || (strcmp(fwImg, "") == 0)) {
         // ... and no port is specified
-        if (port == 0) {
-            // let's assume t
-            return detect_com_port();
-        }
-        else {
-            return port;
-        }
+        save_port = detect_com_port();
     }
+
+    return save_port;
 }
 
 int HandleUpdateRootCmd(const char *fwImg, const char *outfile, const char *ca_dir, int erase, int port) {
@@ -490,10 +490,16 @@ int main(int argc, char **argv) {
     port3->ival[0] = 0;
     port5->ival[0] = 0;
 
-    if (arg_parse(argc, argv, argtable1) == 0) {
+    nerrors1 = arg_parse(argc, argv, argtable1);
+    nerrors2 = arg_parse(argc, argv, argtable2);
+    nerrors3 = arg_parse(argc, argv, argtable3);
+    nerrors5 = arg_parse(argc, argv, argtable5);
+
+    if (nerrors1 == 0) {
         if (help1->count == 1) goto __READ;
         exitcode = HandleReadCmd(infiles1->filename[0], outfile1->filename[0], verbose1->count, port1->ival[0]);
-    } else if (arg_parse(argc, argv, argtable2) == 0) {
+    } 
+    else if (nerrors2 == 0) {
         if (help2->count == 1) goto __UPDATE;
         if (update_tls->count == 1) {
 			if (!(infiles2->count | outfile2->count | key2->count | cert2->count | ca_dir2->count | erase2->count)) goto __UPDATE;
@@ -506,14 +512,17 @@ int main(int argc, char **argv) {
         else {
             goto __UPDATE;
         }
-    } else if (arg_parse(argc, argv, argtable3) == 0) {
+    } 
+    else if (nerrors3 == 0) {
         if (help3->count == 1) goto __ERASE;
         if (!(erase_tls->count | erase_root->count)) goto __ERASE;
         exitcode = HandleEraseCmd(infiles3->filename[0], erase_tls->count, erase_root->count, port3->ival[0]);
-    } else if (arg_parse(argc, argv, argtable5) == 0) {
+    } 
+    else if (nerrors5 == 0) {
         if (help5->count == 1) goto __WRITE;
         exitcode = HandleWriteCmd(infiles5->filename[0], port5->ival[0]);
-    } else {
+    } 
+    else {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {
 __READ:

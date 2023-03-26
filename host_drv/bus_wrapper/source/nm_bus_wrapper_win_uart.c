@@ -567,7 +567,14 @@ uint8 nm_bus_port_detect(uint8 * avail, tpfCheckPort pfChkPort, int flow_control
 	int i;
 	int k = 0;
 	
-	printf("Detecting COM port...\n");
+	if (flow_control) {
+		printf("Detecting USB-Serial COM port...\n");
+	}
+	else {
+		printf("Detecting Debug UART COM port...\n");
+	}
+
+
 	nm_uart_get_com_port((uint8*)comports);
 	for(i = 0; (i<255)&&(comports[i][0] != 0); i++)
 	{	
