@@ -439,7 +439,7 @@ int main(int argc, char **argv) {
     struct arg_lit *update_tls = arg_lit0("t", "tls", "TLS Store");
     struct arg_lit *update_root = arg_lit0("r", "root", "Update Root Store");
     struct arg_file *ca_dir2 = arg_file0(NULL, "ca_dir", "<ca_dir>", "Path to folder containing intermediate CAs and/or Root CA of given certificate");
-    struct arg_lit *erase2 = arg_lit0(NULL, "erase", "Erase the certificate store before writing. If this option is not given, the new certificate material is appended to the certificate store");
+    struct arg_lit *erase2 = arg_lit0(NULL, "erase", "Erase the cert store before writing. If this option is not given, the new certificate material is appended to the certificate store");
     struct arg_int *port2 = arg_int0("p", "port", "<COM Port>", "COM Port");
     struct arg_lit *help2 = arg_lit0("h", "help", "Show help");
     struct arg_end *end2 = arg_end(20);
@@ -517,11 +517,11 @@ int main(int argc, char **argv) {
         // We get here if the command line matched none of the possible syntaxes
         if (read_cmd->count > 0) {
 __READ:
-            printf("Usage: %s ", progname);
+            printf("\nUsage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
 
             if (help1->count) {
-                printf("\nRead X.509 Certificate chain from WINC Device Flash or a given WINC firmware image file\n\n");
+                printf("\nRead contents of Root Cert Store and TLS Server Store from WINC Device or a given WINC firmware image\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable1, "  %-25s %s\n");
 
@@ -534,15 +534,16 @@ __READ:
             arg_print_errors(stdout, end1, "- error");
         } else if (update_cmd2->count > 0) {
 __UPDATE:
-            printf("Usage: %s ", progname);
+            printf("\nUsage: %s ", progname);
             arg_print_syntax(stdout, argtable2, "\n");
 
             if (help2->count) {
-                printf("\nUpdate\n\n");
+                printf("\nUpdate contents of Root Cert Store or TLS Server Store from WINC Device or a given WINC firmware image\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable2, "  %-25s %s\n");
 
                 printf("\nExamples: \n");
+                printf("  %s update atwinc1500.bin --tls -key rsa.key\n", progname);
                 printf("  %s update --tls -key rsa.key --cert rsa.cer --erase\n", progname);
                 printf("  %s update --root --cadir <dir>\n", progname);
                 goto __EXIT;
@@ -550,24 +551,24 @@ __UPDATE:
             arg_print_errors(stdout, end2, "- error");
         } else if (erase_cmd->count > 0) {
 __ERASE:
-            printf("Usage: %s ", progname);
+            printf("\nUsage: %s ", progname);
             arg_print_syntax(stdout, argtable3, "\n");
 
             if (help3->count) {
-                printf("\nErase\n\n");
+                printf("\nErase contents of Root Cert Store or TLS Server Store from WINC Device or a given WINC firmware image\n\n");
                 printf("Options:\n");
                 arg_print_glossary(stdout, argtable3, "  %-25s %s\n");
 
                 printf("\nExamples: \n");
                 printf("  %s erase --root\n", progname);
                 printf("  %s erase --tls\n", progname);
-                printf("  %s erase --root --tls\n", progname);
+                printf("  %s erase atwinc1500.bin --root --tls\n", progname);
                 goto __EXIT;
             }
             arg_print_errors(stdout, end3, "- error");
         } else if (write_cmd->count > 0) {
 __WRITE:
-            printf("Usage: %s ", progname);
+            printf("\nUsage: %s ", progname);
             arg_print_syntax(stdout, argtable5, "\n");
 
             if (help5->count) {
@@ -583,7 +584,7 @@ __WRITE:
             arg_print_errors(stdout, end5, "- error");
 
         } else {
-            printf("Usage: %s ", progname);
+            printf("\nUsage: %s ", progname);
             arg_print_syntax(stdout, argtable1, "\n");
             printf("       %s ", progname);
             arg_print_syntax(stdout, argtable2, "\n");
