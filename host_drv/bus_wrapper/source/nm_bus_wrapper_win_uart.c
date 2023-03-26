@@ -560,7 +560,7 @@ sint8 nm_bus_reinit(void* config)
 *	@date		19 Sept 2012
 *	@version	1.0
 */
-uint8 nm_bus_port_detect(uint8 * avail, tpfCheckPort pfChkPort)
+uint8 nm_bus_port_detect(uint8 * avail, tpfCheckPort pfChkPort, int flow_control)
 {
 	sint8 uart_type = 0;
 	sint8 ret = 0;
@@ -576,7 +576,7 @@ uint8 nm_bus_port_detect(uint8 * avail, tpfCheckPort pfChkPort)
 		//   so the below line is a bit of magic...  however, the
 		//   original code always enables flow control if the COM port
 		//   is specified by the user.
-		comports[i][2] = 1;
+		comports[i][2] = flow_control;
 
 		ret = nm_bus_init((uint8 *)&comports[i][0]);
 		if(ret != M2M_SUCCESS)

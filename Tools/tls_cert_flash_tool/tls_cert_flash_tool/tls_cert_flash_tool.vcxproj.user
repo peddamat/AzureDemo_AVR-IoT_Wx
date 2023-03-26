@@ -5,7 +5,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_UART|Win32'">
-    <LocalDebuggerCommandArguments>write atwinc1500-adafruit.bin</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>read </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>..\Debug_UART</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

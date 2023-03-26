@@ -7,6 +7,7 @@
 */
 
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 //#include "../efuse/efuse.h"
@@ -53,7 +54,7 @@ SPI FLASH STATES
 
 #define PROG_HDR_SZ					(20)
 
-extern uint8 nm_bus_port_detect(uint8 * avail,tpfCheckPort pfChkPort);
+extern uint8 nm_bus_port_detect(uint8 * avail,tpfCheckPort pfChkPort, int flow_control);
 extern uint32 spi_flash_get_size(void);
 extern uint8 nm_bus_get_chip_type(void);
 
@@ -290,12 +291,17 @@ ERR1:
 uint8 detect_com_port() // Auto-detect
 {
 	uint8 avail[255] = {0};
-	int navail = nm_bus_port_detect(avail, nm_uart_sync_cmd);
+	int navail = nm_bus_port_detect(avail, nm_uart_sync_cmd, 0);
 	if(navail < 1) // No ports available.
 	{
-		return -1;
+		navail = nm_bus_port_detect(avail, nm_uart_sync_cmd, 1);
+		if (navail < 1) // No ports available.
+		{
+			return -1;
+		}
 	}
-	else if(navail < 2)
+
+	if(navail < 2)
 		return avail[0]; // Only one port available. Use it
 	else
 		return 0; // Let user choose COM port
@@ -345,8 +351,11 @@ sint8 programmer_init(void *pvInitValue,uint8 u8Br)
 
     if(port == 0) // Auto-detect
     {
+		// We should never get here 
+		assert(FALSE);
+
         uint8 avail[255] = {0};
-        int navail = nm_bus_port_detect(avail, nm_uart_sync_cmd);
+        int navail = nm_bus_port_detect(avail, nm_uart_sync_cmd, 0);
         if(navail < 1) // No ports available.
         {
             ret = -1;
@@ -357,14 +366,14 @@ sint8 programmer_init(void *pvInitValue,uint8 u8Br)
         else
             port = 0; // Let user choose COM port
     }
-    else
-    {
-        // comports is normally populated when nm_bus_port_detect() is called, but we don't want to do all
-        // of the auto-detect stuff if we've manually supplied a port to use.
-        comports[0][0] = port;
-        comports[0][1] = 0;
-        comports[0][2] = 1; // Flow control
-    }
+    //else
+    //{
+    //    // comports is normally populated when nm_bus_port_detect() is called, but we don't want to do all
+    //    // of the auto-detect stuff if we've manually supplied a port to use.
+    //    comports[0][0] = port;
+    //    comports[0][1] = 0;
+    //    comports[0][2] = 1; // Flow control
+    //}
 #endif
 
 	ret = nm_bus_iface_init((uint8 *)&port);
